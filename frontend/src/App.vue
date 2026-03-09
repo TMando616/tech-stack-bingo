@@ -1,47 +1,150 @@
 <script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
-import TheWelcome from './components/TheWelcome.vue'
+/**
+ * メインアプリケーションコンポーネント
+ * ビンゴボードの表示を管理します。
+ */
+import { ref, onMounted } from 'vue'
+import axios from 'axios'
+
+// ビンゴ項目の型定義
+interface BingoItem {
+  id: number
+  label: string
+  is_achieved: boolean
+  achieved_at: string | null
+  position: number
+}
+
+// ビンゴ項目の状態管理
+const bingoItems = ref<BingoItem[]>([])
+const isLoading = ref(true)
+
+// APIからビンゴ項目を取得
+const fetchBingoItems = async () => {
+  try {
+    isLoading.value = true
+    // TODO: LaravelバックエンドのURLに合わせる (後ほど .env 等で管理検討)
+    const response = await axios.get('http://localhost:8000/api/bingo-items')
+    bingoItems.value = response.data.data
+  } catch (error) {
+    console.error('データの取得に失敗しました:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// 達成状況の更新 (トグル)
+const toggleAchieved = async (item: BingoItem) => {
+  try {
+    const updatedStatus = !item.is_achieved
+    const response = await axios.patch(`http://localhost:8000/api/bingo-items/${item.id}`, {
+      is_achieved: updatedStatus
+    })
+    
+    // 取得した新しいデータで更新
+    const index = bingoItems.value.findIndex(i => i.id === item.id)
+    if (index !== -1) {
+      bingoItems.value[index] = response.data.data
+    }
+  } catch (error) {
+    console.error('更新に失敗しました:', error)
+  }
+}
+
+// コンポーネントマウント時に取得
+onMounted(() => {
+  fetchBingoItems()
+})
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
+  <main class="container">
+    <header>
+      <h1>技術スタック・ビンゴ</h1>
+      <p>習得した技術にチェックを入れてビンゴを目指そう！</p>
+    </header>
 
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
+    <div v-if="isLoading" class="loading">
+      読み込み中...
     </div>
-  </header>
 
-  <main>
-    <TheWelcome />
+    <div v-else class="bingo-grid">
+      <div 
+        v-for="item in bingoItems" 
+        :key="item.id" 
+        class="bingo-cell"
+        :class="{ 'is-achieved': item.is_achieved }"
+        @click="toggleAchieved(item)"
+      >
+        <span class="cell-label">{{ item.label }}</span>
+        <span v-if="item.achieved_at" class="cell-date">{{ item.achieved_at }}</span>
+      </div>
+    </div>
   </main>
 </template>
 
 <style scoped>
+/* 基本レイアウトの設定 */
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: sans-serif;
+}
+
 header {
-  line-height: 1.5;
+  text-align: center;
+  margin-bottom: 2rem;
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
+.loading {
+  text-align: center;
+  padding: 3rem;
 }
 
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
+/* 5x5のビンゴグリッドの設定 */
+.bingo-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  aspect-ratio: 1 / 1;
+}
 
-  .logo {
-    margin: 0 2rem 0 0;
-  }
+/* ビンゴのマスのスタイル */
+.bingo-cell {
+  background-color: #f0f0f0;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  font-size: 0.8rem;
+  overflow: hidden;
+}
 
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
+.bingo-cell:hover {
+  background-color: #e0e0e0;
+  border-color: #bbb;
+}
+
+/* 達成済みマスのスタイル */
+.bingo-cell.is-achieved {
+  background-color: #4caf50;
+  color: white;
+  border-color: #388e3c;
+}
+
+.cell-label {
+  font-weight: bold;
+}
+
+.cell-date {
+  font-size: 0.6rem;
+  margin-top: 4px;
 }
 </style>
