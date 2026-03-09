@@ -4,7 +4,7 @@
  * ビンゴボードの表示を管理します。
  */
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import apiClient from './api/axios'
 
 // ビンゴ項目の型定義
 interface BingoItem {
@@ -23,8 +23,7 @@ const isLoading = ref(true)
 const fetchBingoItems = async () => {
   try {
     isLoading.value = true
-    // TODO: LaravelバックエンドのURLに合わせる (後ほど .env 等で管理検討)
-    const response = await axios.get('http://localhost:8000/api/bingo-items')
+    const response = await apiClient.get('/bingo-items')
     bingoItems.value = response.data.data
   } catch (error) {
     console.error('データの取得に失敗しました:', error)
@@ -35,9 +34,12 @@ const fetchBingoItems = async () => {
 
 // 達成状況の更新 (トグル)
 const toggleAchieved = async (item: BingoItem) => {
+  // 中央(Free)は更新不可とする
+  if (item.position === 12) return
+
   try {
     const updatedStatus = !item.is_achieved
-    const response = await axios.patch(`http://localhost:8000/api/bingo-items/${item.id}`, {
+    const response = await apiClient.patch(`/bingo-items/${item.id}`, {
       is_achieved: updatedStatus
     })
     
@@ -73,7 +75,10 @@ onMounted(() => {
         v-for="item in bingoItems" 
         :key="item.id" 
         class="bingo-cell"
-        :class="{ 'is-achieved': item.is_achieved }"
+        :class="{ 
+          'is-achieved': item.is_achieved,
+          'is-free': item.position === 12 
+        }"
         @click="toggleAchieved(item)"
       >
         <span class="cell-label">{{ item.label }}</span>
@@ -125,6 +130,7 @@ header {
   text-align: center;
   font-size: 0.8rem;
   overflow: hidden;
+  user-select: none;
 }
 
 .bingo-cell:hover {
@@ -137,6 +143,14 @@ header {
   background-color: #4caf50;
   color: white;
   border-color: #388e3c;
+}
+
+/* 中央(Free)マスのスタイル */
+.bingo-cell.is-free {
+  background-color: #ff9800;
+  color: white;
+  border-color: #f57c00;
+  cursor: default;
 }
 
 .cell-label {
