@@ -2,9 +2,28 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class BingoItem extends Model
 {
-    //
+    use HasFactory;
+
+    /**
+     * 複数代入可能な属性
+     */
+    protected $fillable = [
+        'label',
+        'is_achieved',
+        'achieved_at',
+        'position',
+    ];
+
+    /**
+     * キャストする必要のある属性
+     */
+    protected $casts = [
+        'is_achieved' => 'boolean', // 達成フラグを論理値として扱う
+        'achieved_at' => 'date:Y-m-d', // 達成日を YYYY-MM-DD 形式で扱う
+    ];
 }
