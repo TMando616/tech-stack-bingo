@@ -3,16 +3,26 @@
 namespace Database\Seeders;
 
 use App\Models\BingoItem;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class BingoItemSeeder extends Seeder
 {
     /**
      * データベースの初期データを投入
-     * 5x5(25マス)のビンゴ項目を作成します。
      */
     public function run(): void
     {
+        // テストユーザーを作成
+        $user = User::firstOrCreate(
+            ['email' => 'test@example.com'],
+            [
+                'name' => 'Test User',
+                'password' => Hash::make('password'),
+            ]
+        );
+
         // 5x5のサンプル技術スタック（中央はFREE）
         $techStacks = [
             'HTML', 'CSS', 'JavaScript', 'TypeScript', 'React',
@@ -26,9 +36,10 @@ class BingoItemSeeder extends Seeder
             $isFree = ($index === 12); // 中央(25マスの真ん中)
 
             BingoItem::create([
+                'user_id' => $user->id,
                 'label' => $label,
                 'position' => $index,
-                'is_achieved' => $isFree, // FREEは最初から達成済み
+                'is_achieved' => $isFree,
                 'achieved_at' => $isFree ? now()->toDateString() : null,
             ]);
         }

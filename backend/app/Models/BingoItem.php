@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BingoItem extends Model
 {
@@ -13,6 +14,7 @@ class BingoItem extends Model
      * 複数代入可能な属性
      */
     protected $fillable = [
+        'user_id', // ユーザーIDを追加
         'label',
         'is_achieved',
         'achieved_at',
@@ -23,7 +25,15 @@ class BingoItem extends Model
      * キャストする必要のある属性
      */
     protected $casts = [
-        'is_achieved' => 'boolean', // 達成フラグを論理値として扱う
-        'achieved_at' => 'date:Y-m-d', // 達成日を YYYY-MM-DD 形式で扱う
+        'is_achieved' => 'boolean',
+        'achieved_at' => 'date:Y-m-d',
     ];
+
+    /**
+     * この項目を所有するユーザーを取得
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 }
