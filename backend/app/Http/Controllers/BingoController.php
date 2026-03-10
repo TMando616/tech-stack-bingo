@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\BingoItemResource;
+use App\Models\BingoBoard;
 use App\Models\BingoItem;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -10,21 +11,26 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 class BingoController extends Controller
 {
     /**
-     * ログインユーザーのビンゴ項目を全件取得
+     * 指定されたボードのビンゴ項目を取得
      *
+     * @param Request $request
      * @return AnonymousResourceCollection
      */
-    public function index(): AnonymousResourceCollection
+    public function index(Request $request): AnonymousResourceCollection
     {
-        // ログイン中のユーザーに紐づくビンゴ項目のみを取得
+        $request->validate([
+            'bingo_board_id' => 'required|exists:bingo_boards,id',
+        ]);
+
+        $board = auth()->user()->bingoBoards()->findOrFail($request->bingo_board_id);
+
         return BingoItemResource::collection(
-            auth()->user()->bingoItems()->orderBy('position')->get()
+            $board->items()->orderBy('position')->get()
         );
     }
 
     /**
      * ビンゴ項目の更新
-     * ログインユーザーが所有する項目のみを更新可能にします。
      *
      * @param Request $request
      * @param BingoItem $bingoItem
@@ -32,21 +38,17 @@ class BingoController extends Controller
      */
     public function update(Request $request, BingoItem $bingoItem): BingoItemResource
     {
-        // 所有権の確認
-        if ($bingoItem->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized action.');
-        }
+        // ボード経由で所有権を確認
+        $board = auth()->user()->bingoBoards()->findOrFail($bingoItem->bingo_board_id);
 
         $data = [];
 
-        // 達成フラグの更新
         if ($request->has('is_achieved')) {
             $isAchieved = (bool) $request->input('is_achieved');
             $data['is_achieved'] = $isAchieved;
             $data['achieved_at'] = $isAchieved ? now()->toDateString() : null;
         }
 
-        // ラベルの更新 (中央以外)
         if ($request->has('label') && $bingoItem->position !== 12) {
             $data['label'] = $request->input('label');
         }

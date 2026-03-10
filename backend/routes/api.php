@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BingoBoardController;
 use App\Http\Controllers\BingoController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -10,18 +11,25 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// ユーザー情報取得 (Breeze標準)
+// ユーザー情報取得
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 });
 
-// ビンゴ項目に関連するAPI (認証必須)
-Route::middleware(['auth:sanctum'])->prefix('bingo-items')->group(function () {
-    // 一覧取得
-    Route::get('/', [BingoController::class, 'index']);
-    // 更新
-    Route::patch('/{bingoItem}', [BingoController::class, 'update']);
+// 認証必須のAPI
+Route::middleware(['auth:sanctum'])->group(function () {
+    // ビンゴボード管理
+    Route::prefix('bingo-boards')->group(function () {
+        Route::get('/', [BingoBoardController::class, 'index']);
+        Route::post('/', [BingoBoardController::class, 'store']);
+    });
+
+    // ビンゴ項目管理
+    Route::prefix('bingo-items')->group(function () {
+        Route::get('/', [BingoController::class, 'index']);
+        Route::patch('/{bingoItem}', [BingoController::class, 'update']);
+    });
 });
 
-// 認証関連のルート (login, register, logout など)
+// 認証関連
 require __DIR__.'/auth.php';
