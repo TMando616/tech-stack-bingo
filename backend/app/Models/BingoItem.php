@@ -14,7 +14,7 @@ class BingoItem extends Model
      * 複数代入可能な属性
      */
     protected $fillable = [
-        'user_id', // ユーザーIDを追加
+        'bingo_board_id', // ボードIDを追加
         'label',
         'is_achieved',
         'achieved_at',
@@ -30,10 +30,10 @@ class BingoItem extends Model
     ];
 
     /**
-     * この項目を所有するユーザーを取得
+     * この項目を所有するビンゴボードを取得
      */
-    public function user(): BelongsTo
+    public function bingoBoard(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(BingoBoard::class);
     }
 }

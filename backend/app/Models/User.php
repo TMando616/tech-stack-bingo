@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -49,10 +48,10 @@ class User extends Authenticatable
     }
 
     /**
-     * ユーザーが所有するビンゴ項目を取得
+     * ユーザーが所有する複数のビンゴボードを取得
      */
-    public function bingoItems(): HasMany
+    public function bingoBoards(): HasMany
     {
-        return $this->hasMany(BingoItem::class);
+        return $this->hasMany(BingoBoard::class);
     }
 }
