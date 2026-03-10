@@ -21,8 +21,8 @@ class BingoController extends Controller
     }
 
     /**
-     * ビンゴ項目の達成状況の更新
-     * 達成フラグ(is_achieved)を更新し、達成された場合は達成日を自動設定します。
+     * ビンゴ項目の更新
+     * 達成状況(is_achieved)およびラベル(label)を更新します。
      *
      * @param Request $request
      * @param BingoItem $bingoItem
@@ -30,14 +30,23 @@ class BingoController extends Controller
      */
     public function update(Request $request, BingoItem $bingoItem): BingoItemResource
     {
-        // リクエストの達成フラグに基づいてデータを更新
-        $isAchieved = (bool) $request->input('is_achieved');
+        // 更新データの構築
+        $data = [];
 
-        $bingoItem->update([
-            'is_achieved' => $isAchieved,
+        // 達成フラグの更新がある場合
+        if ($request->has('is_achieved')) {
+            $isAchieved = (bool) $request->input('is_achieved');
+            $data['is_achieved'] = $isAchieved;
             // 達成された場合は今日の日付を設定、解除された場合はNULLを設定
-            'achieved_at' => $isAchieved ? now()->toDateString() : null,
-        ]);
+            $data['achieved_at'] = $isAchieved ? now()->toDateString() : null;
+        }
+
+        // ラベルの更新がある場合 (中央のFREE以外)
+        if ($request->has('label') && $bingoItem->position !== 12) {
+            $data['label'] = $request->input('label');
+        }
+
+        $bingoItem->update($data);
 
         return new BingoItemResource($bingoItem);
     }
