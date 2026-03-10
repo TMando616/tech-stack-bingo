@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * メインアプリケーションコンポーネント
- * ビンゴボードの表示、達成状況の更新、ビンゴ判定を管理します。
+ * ビンゴボードの表示、達成状況の更新、ラベル編集、ビンゴ判定を管理します。
  */
 import { ref, onMounted, computed } from 'vue'
 import apiClient from './api/axios'
@@ -15,9 +15,10 @@ interface BingoItem {
   position: number
 }
 
-// ビンゴ項目の状態管理
+// 状態管理
 const bingoItems = ref<BingoItem[]>([])
 const isLoading = ref(true)
+const isEditMode = ref(false) // 編集モードかどうかのフラグ
 
 // 日付のフォーマット (YYYY-MM-DD -> YYYY年MM月DD日)
 const formatDate = (dateString: string | null) => {
@@ -31,7 +32,6 @@ const fetchBingoItems = async () => {
   try {
     isLoading.value = true
     const response = await apiClient.get('/bingo-items')
-    // position 順にソートして格納
     bingoItems.value = response.data.data.sort((a: BingoItem, b: BingoItem) => a.position - b.position)
   } catch (error) {
     console.error('データの取得に失敗しました:', error)
@@ -40,9 +40,17 @@ const fetchBingoItems = async () => {
   }
 }
 
+// マスクリック時のアクション
+const handleCellClick = (item: BingoItem) => {
+  if (isEditMode.value) {
+    editLabel(item)
+  } else {
+    toggleAchieved(item)
+  }
+}
+
 // 達成状況の更新 (トグル)
 const toggleAchieved = async (item: BingoItem) => {
-  // 中央(Free)は更新不可とする
   if (item.position === 12) return
 
   try {
@@ -51,7 +59,6 @@ const toggleAchieved = async (item: BingoItem) => {
       is_achieved: updatedStatus
     })
     
-    // 取得した新しいデータで更新
     const index = bingoItems.value.findIndex(i => i.id === item.id)
     if (index !== -1) {
       bingoItems.value[index] = response.data.data
@@ -61,33 +68,43 @@ const toggleAchieved = async (item: BingoItem) => {
   }
 }
 
-// ビンゴ判定ロジック
+// ラベルの編集
+const editLabel = async (item: BingoItem) => {
+  if (item.position === 12) return
+
+  const newLabel = window.prompt(`${item.label} の名前を編集:`, item.label)
+  if (newLabel === null || newLabel === item.label || newLabel.trim() === '') return
+
+  try {
+    const response = await apiClient.patch(`/bingo-items/${item.id}`, {
+      label: newLabel.trim()
+    })
+    
+    const index = bingoItems.value.findIndex(i => i.id === item.id)
+    if (index !== -1) {
+      bingoItems.value[index] = response.data.data
+    }
+  } catch (error) {
+    console.error('ラベルの更新に失敗しました:', error)
+  }
+}
+
+// ビンゴ判定
 const bingoCount = computed(() => {
   if (bingoItems.value.length < 25) return 0
-
   let count = 0
   const grid = bingoItems.value
-
-  // 判定用インデックスの定義
   const lines = [
-    // 横 5本
     [0, 1, 2, 3, 4], [5, 6, 7, 8, 9], [10, 11, 12, 13, 14], [15, 16, 17, 18, 19], [20, 21, 22, 23, 24],
-    // 縦 5本
     [0, 5, 10, 15, 20], [1, 6, 11, 16, 21], [2, 7, 12, 17, 22], [3, 8, 13, 18, 23], [4, 9, 14, 19, 24],
-    // 斜め 2本
     [0, 6, 12, 18, 24], [4, 8, 12, 16, 20]
   ]
-
   for (const line of lines) {
-    if (line.every(index => grid[index]?.is_achieved)) {
-      count++
-    }
+    if (line.every(index => grid[index]?.is_achieved)) count++
   }
-
   return count
 })
 
-// コンポーネントマウント時に取得
 onMounted(() => {
   fetchBingoItems()
 })
@@ -99,7 +116,16 @@ onMounted(() => {
       <h1>技術スタック・ビンゴ</h1>
       <p>習得した技術にチェックを入れてビンゴを目指そう！</p>
       
-      <!-- ビンゴ表示エリア -->
+      <div class="controls">
+        <button 
+          class="btn-edit" 
+          :class="{ 'active': isEditMode }"
+          @click="isEditMode = !isEditMode"
+        >
+          {{ isEditMode ? '編集終了' : '名前を編集する' }}
+        </button>
+      </div>
+
       <div v-if="bingoCount > 0" class="bingo-banner">
         🎉 {{ bingoCount }} BINGO! 🎉
       </div>
@@ -109,7 +135,7 @@ onMounted(() => {
       読み込み中...
     </div>
 
-    <div v-else class="bingo-grid">
+    <div v-else class="bingo-grid" :class="{ 'editing': isEditMode }">
       <div 
         v-for="item in bingoItems" 
         :key="item.id" 
@@ -118,13 +144,14 @@ onMounted(() => {
           'is-achieved': item.is_achieved,
           'is-free': item.position === 12 
         }"
-        @click="toggleAchieved(item)"
+        @click="handleCellClick(item)"
       >
         <div class="cell-content">
           <span class="cell-label">{{ item.label }}</span>
-          <span v-if="item.achieved_at" class="cell-date">
+          <span v-if="item.achieved_at && !isEditMode" class="cell-date">
             {{ formatDate(item.achieved_at) }}
           </span>
+          <span v-if="isEditMode && item.position !== 12" class="edit-icon">✏️</span>
         </div>
       </div>
     </div>
@@ -132,7 +159,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* 基本レイアウトの設定 */
 .container {
   max-width: 600px;
   margin: 0 auto;
@@ -150,6 +176,32 @@ h1 {
   font-size: 2.5rem;
   color: #2c3e50;
   margin-bottom: 0.5rem;
+}
+
+.controls {
+  margin-bottom: 1.5rem;
+}
+
+.btn-edit {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 2px solid #3498db;
+  background-color: white;
+  color: #3498db;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-edit:hover {
+  background-color: #3498db;
+  color: white;
+}
+
+.btn-edit.active {
+  background-color: #e74c3c;
+  border-color: #e74c3c;
+  color: white;
 }
 
 .bingo-banner {
@@ -173,11 +225,8 @@ h1 {
 .loading {
   text-align: center;
   padding: 3rem;
-  font-size: 1.2rem;
-  color: #666;
 }
 
-/* 5x5のビンゴグリッドの設定 */
 .bingo-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -185,7 +234,10 @@ h1 {
   aspect-ratio: 1 / 1;
 }
 
-/* ビンゴのマスのスタイル */
+.bingo-grid.editing .bingo-cell:not(.is-free) {
+  border: 2px dashed #3498db;
+}
+
 .bingo-cell {
   background-color: #fff;
   border: 2px solid #e0e0e0;
@@ -199,13 +251,11 @@ h1 {
   text-align: center;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
   user-select: none;
-  position: relative;
 }
 
 .bingo-cell:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  border-color: #bdbdbd;
 }
 
 .cell-content {
@@ -215,18 +265,12 @@ h1 {
   gap: 4px;
 }
 
-/* 達成済みマスのスタイル */
 .bingo-cell.is-achieved {
   background-color: #4caf50;
   color: white;
   border-color: #43a047;
 }
 
-.bingo-cell.is-achieved:hover {
-  background-color: #45a049;
-}
-
-/* 中央(Free)マスのスタイル */
 .bingo-cell.is-free {
   background-color: #ff9800;
   color: white;
@@ -246,5 +290,9 @@ h1 {
   background-color: rgba(255, 255, 255, 0.2);
   padding: 2px 4px;
   border-radius: 4px;
+}
+
+.edit-icon {
+  font-size: 0.8rem;
 }
 </style>
