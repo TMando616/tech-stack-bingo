@@ -19,6 +19,13 @@ interface BingoItem {
 const bingoItems = ref<BingoItem[]>([])
 const isLoading = ref(true)
 
+// 日付のフォーマット (YYYY-MM-DD -> YYYY年MM月DD日)
+const formatDate = (dateString: string | null) => {
+  if (!dateString) return ''
+  const [year, month, day] = dateString.split('-')
+  return `${year}年${month}月${day}日`
+}
+
 // APIからビンゴ項目を取得
 const fetchBingoItems = async () => {
   try {
@@ -113,8 +120,12 @@ onMounted(() => {
         }"
         @click="toggleAchieved(item)"
       >
-        <span class="cell-label">{{ item.label }}</span>
-        <span v-if="item.achieved_at" class="cell-date">{{ item.achieved_at }}</span>
+        <div class="cell-content">
+          <span class="cell-label">{{ item.label }}</span>
+          <span v-if="item.achieved_at" class="cell-date">
+            {{ formatDate(item.achieved_at) }}
+          </span>
+        </div>
       </div>
     </div>
   </main>
@@ -126,7 +137,8 @@ onMounted(() => {
   max-width: 600px;
   margin: 0 auto;
   padding: 2rem;
-  font-family: sans-serif;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  color: #333;
 }
 
 header {
@@ -134,14 +146,21 @@ header {
   margin-bottom: 2rem;
 }
 
+h1 {
+  font-size: 2.5rem;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
 .bingo-banner {
   background-color: #ffeb3b;
   color: #f44336;
   padding: 1rem;
-  border-radius: 8px;
-  font-size: 1.5rem;
+  border-radius: 12px;
+  font-size: 1.8rem;
   font-weight: bold;
   margin-top: 1rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
   animation: pulse 1s infinite;
 }
 
@@ -154,44 +173,57 @@ header {
 .loading {
   text-align: center;
   padding: 3rem;
+  font-size: 1.2rem;
+  color: #666;
 }
 
 /* 5x5のビンゴグリッドの設定 */
 .bingo-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
+  gap: 12px;
   aspect-ratio: 1 / 1;
 }
 
 /* ビンゴのマスのスタイル */
 .bingo-cell {
-  background-color: #f0f0f0;
-  border: 2px solid #ddd;
-  border-radius: 8px;
+  background-color: #fff;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 5px;
+  padding: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   text-align: center;
-  font-size: 0.8rem;
-  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
   user-select: none;
+  position: relative;
 }
 
 .bingo-cell:hover {
-  background-color: #e0e0e0;
-  border-color: #bbb;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  border-color: #bdbdbd;
+}
+
+.cell-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 }
 
 /* 達成済みマスのスタイル */
 .bingo-cell.is-achieved {
   background-color: #4caf50;
   color: white;
-  border-color: #388e3c;
+  border-color: #43a047;
+}
+
+.bingo-cell.is-achieved:hover {
+  background-color: #45a049;
 }
 
 /* 中央(Free)マスのスタイル */
@@ -203,11 +235,16 @@ header {
 }
 
 .cell-label {
-  font-weight: bold;
+  font-weight: 700;
+  font-size: 0.9rem;
+  line-height: 1.2;
 }
 
 .cell-date {
   font-size: 0.6rem;
-  margin-top: 4px;
+  opacity: 0.9;
+  background-color: rgba(255, 255, 255, 0.2);
+  padding: 2px 4px;
+  border-radius: 4px;
 }
 </style>
