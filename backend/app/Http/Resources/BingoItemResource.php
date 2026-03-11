@@ -17,6 +17,7 @@ class BingoItemResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'bingo_board_id' => $this->bingo_board_id, // ボードIDを追加
             'label' => $this->label,
             'is_achieved' => $this->is_achieved,
             'achieved_at' => $this->achieved_at ? $this->achieved_at->format('Y-m-d') : null,
