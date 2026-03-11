@@ -36,7 +36,6 @@ const login = async () => {
     await fetchUser()
     if (user.value) {
       await fetchBoards()
-      if (boards.value.length > 0) currentBoard.value = boards.value[0]
     }
   } catch (error) {
     console.error('ログイン失敗:', error)
@@ -72,6 +71,10 @@ const fetchBoards = async () => {
   try {
     const response = await api.get('/bingo-boards')
     boards.value = response.data
+    // まだ選択されていない場合に最初のボードを選択
+    if (boards.value.length > 0 && !currentBoard.value) {
+      currentBoard.value = boards.value[0]
+    }
   } catch (error) {
     console.error('ボード取得失敗:', error)
   }
@@ -81,7 +84,7 @@ const fetchBoards = async () => {
 const createBoard = async () => {
   if (!newBoardTitle.value.trim()) return
   try {
-    const response = await api.post('/bingo-boards', { title: newBoardTitle.value })
+    const response = await api.post('/bingo-boards', { title: newBoardTitle.value.trim() })
     boards.value.unshift(response.data)
     currentBoard.value = response.data
     newBoardTitle.value = ''
@@ -96,9 +99,11 @@ const fetchBingoItems = async () => {
   try {
     isLoading.value = true
     const response = await api.get(`/bingo-items?bingo_board_id=${currentBoard.value.id}`)
-    bingoItems.value = response.data.data.sort((a: BingoItem, b: BingoItem) => a.position - b.position)
+    const data = response.data.data || response.data // ResourceCollectionの形式に対応
+    bingoItems.value = data.sort((a: BingoItem, b: BingoItem) => a.position - b.position)
   } catch (error) {
     console.error('項目取得失敗:', error)
+    bingoItems.value = []
   } finally {
     isLoading.value = false
   }
@@ -107,7 +112,7 @@ const fetchBingoItems = async () => {
 // ボード切り替え時に項目を再取得
 watch(currentBoard, (newBoard) => {
   if (newBoard) fetchBingoItems()
-})
+}, { immediate: true })
 
 const handleCellClick = (item: BingoItem) => {
   if (isEditMode.value) editLabel(item)
@@ -118,8 +123,13 @@ const toggleAchieved = async (item: BingoItem) => {
   if (item.position === 12) return
   try {
     const response = await api.patch(`/bingo-items/${item.id}`, { is_achieved: !item.is_achieved })
+    const updatedData = response.data.data || response.data
     const index = bingoItems.value.findIndex(i => i.id === item.id)
-    if (index !== -1) bingoItems.value[index] = response.data.data
+    if (index !== -1) {
+      bingoItems.value[index] = updatedData
+      // 念のためソートを維持
+      bingoItems.value.sort((a: BingoItem, b: BingoItem) => a.position - b.position)
+    }
   } catch (error) {
     console.error('更新失敗:', error)
   }
@@ -128,11 +138,14 @@ const toggleAchieved = async (item: BingoItem) => {
 const editLabel = async (item: BingoItem) => {
   if (item.position === 12) return
   const newLabel = window.prompt(`${item.label} を編集:`, item.label)
-  if (!newLabel || newLabel === item.label) return
+  if (newLabel === null || newLabel === item.label) return
   try {
     const response = await api.patch(`/bingo-items/${item.id}`, { label: newLabel.trim() })
+    const updatedData = response.data.data || response.data
     const index = bingoItems.value.findIndex(i => i.id === item.id)
-    if (index !== -1) bingoItems.value[index] = response.data.data
+    if (index !== -1) {
+      bingoItems.value[index] = updatedData
+    }
   } catch (error) {
     console.error('編集失敗:', error)
   }
@@ -152,8 +165,10 @@ const bingoCount = computed(() => {
 })
 
 const formatDate = (ds: string | null) => {
-  if (!ds) return ''
-  const [y, m, d] = ds.split('-')
+  if (!ds || typeof ds !== 'string') return ''
+  const parts = ds.split('-')
+  if (parts.length !== 3) return ds
+  const [y, m, d] = parts
   return `${y}年${m}月${d}日`
 }
 
@@ -161,7 +176,6 @@ onMounted(async () => {
   await fetchUser()
   if (user.value) {
     await fetchBoards()
-    if (boards.value.length > 0) currentBoard.value = boards.value[0]
   }
 })
 </script>
