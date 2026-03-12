@@ -15,10 +15,10 @@ const apiClient = axios.create({
 
 // LaravelのAPIプレフィックスを付けるためのラッパー
 export const api = {
-  get: (url: string) => apiClient.get(`/api${url}`),
-  post: (url: string) => apiClient.post(`/api${url}`),
+  get: (url: string, config?: any) => apiClient.get(`/api${url}`, config),
+  post: (url: string, data?: any) => apiClient.post(`/api${url}`, data),
   patch: (url: string, data?: any) => apiClient.patch(`/api${url}`, data),
-  delete: (url: string) => apiClient.delete(`/api${url}`),
+  delete: (url: string, config?: any) => apiClient.delete(`/api${url}`, config),
   csrf: () => apiClient.get('/sanctum/csrf-cookie') // CSRFトークン取得
 }
 

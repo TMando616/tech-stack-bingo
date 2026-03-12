@@ -27,6 +27,12 @@ const bingoItems = ref<BingoItem[]>([])
 const isLoading = ref(false)
 const isEditMode = ref(false)
 
+// 編集モーダル状態
+const showEditModal = ref(false)
+const editTargetItem = ref<BingoItem | null>(null)
+const editInputLabel = ref('')
+const isSavingLabel = ref(false)
+
 // 認証: ログイン
 const login = async () => {
   try {
@@ -73,7 +79,7 @@ const fetchBoards = async () => {
     boards.value = response.data
     // まだ選択されていない場合に最初のボードを選択
     if (boards.value.length > 0 && !currentBoard.value) {
-      currentBoard.value = boards.value[0]
+      currentBoard.value = boards.value[0] || null
     }
   } catch (error) {
     console.error('ボード取得失敗:', error)
@@ -135,19 +141,41 @@ const toggleAchieved = async (item: BingoItem) => {
   }
 }
 
-const editLabel = async (item: BingoItem) => {
+const editLabel = (item: BingoItem) => {
   if (item.position === 12) return
-  const newLabel = window.prompt(`${item.label} を編集:`, item.label)
-  if (newLabel === null || newLabel === item.label) return
+  editTargetItem.value = item
+  editInputLabel.value = item.label
+  showEditModal.value = true
+}
+
+const closeEditModal = () => {
+  showEditModal.value = false
+  editTargetItem.value = null
+  editInputLabel.value = ''
+}
+
+const saveEditLabel = async () => {
+  if (!editTargetItem.value) return
+  const newLabel = editInputLabel.value.trim()
+  if (!newLabel || newLabel === editTargetItem.value.label) {
+    closeEditModal()
+    return
+  }
+  
   try {
-    const response = await api.patch(`/bingo-items/${item.id}`, { label: newLabel.trim() })
+    isSavingLabel.value = true
+    const response = await api.patch(`/bingo-items/${editTargetItem.value.id}`, { label: newLabel })
     const updatedData = response.data.data || response.data
-    const index = bingoItems.value.findIndex(i => i.id === item.id)
+    const index = bingoItems.value.findIndex(i => i.id === editTargetItem.value?.id)
     if (index !== -1) {
       bingoItems.value[index] = updatedData
     }
+    closeEditModal()
   } catch (error) {
     console.error('編集失敗:', error)
+    alert('編集に失敗しました。')
+  } finally {
+    isSavingLabel.value = false
   }
 }
 
@@ -252,6 +280,27 @@ onMounted(async () => {
         <div v-else class="no-board">ボードを選択してください</div>
       </section>
     </div>
+
+    <!-- 編集モーダル -->
+    <div v-if="showEditModal" class="modal-overlay" @click.self="closeEditModal">
+      <div class="modal-content">
+        <h3>項目の編集</h3>
+        <input 
+          v-model="editInputLabel" 
+          type="text" 
+          class="modal-input" 
+          placeholder="項目名を入力"
+          @keyup.enter="saveEditLabel"
+          autofocus
+        />
+        <div class="modal-actions">
+          <button class="btn-cancel" @click="closeEditModal" :disabled="isSavingLabel">キャンセル</button>
+          <button class="btn-save" @click="saveEditLabel" :disabled="isSavingLabel">
+            {{ isSavingLabel ? '保存中...' : '保存' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </main>
 </template>
 
@@ -298,4 +347,17 @@ h1 { font-size: 2rem; color: #2c3e50; margin: 0; }
 .cell-date { font-size: 0.5rem; opacity: 0.9; margin-top: 2px; display: block; }
 .edit-icon { font-size: 0.7rem; }
 .no-board { text-align: center; color: #999; margin-top: 4rem; }
+
+/* モーダル */
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal-content { background: white; padding: 1.5rem; border-radius: 8px; width: 90%; max-width: 400px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+.modal-content h3 { margin-top: 0; margin-bottom: 1rem; color: #2c3e50; }
+.modal-input { width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 1rem; margin-bottom: 1rem; }
+.modal-input:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 2px rgba(52,152,219,0.2); }
+.modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
+.btn-cancel { padding: 8px 16px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; color: #666; }
+.btn-cancel:hover:not(:disabled) { background: #f5f5f5; }
+.btn-save { padding: 8px 16px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+.btn-save:hover:not(:disabled) { background: #2980b9; }
+.btn-save:disabled, .btn-cancel:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>
