@@ -1,0 +1,79 @@
+import { ref, computed } from 'vue'
+import { api } from '../api/axios'
+import type { BingoItem } from '../types'
+
+export function useBingoItems() {
+  const bingoItems = ref<BingoItem[]>([])
+  const isLoading = ref(false)
+
+  const fetchBingoItems = async (boardId: number) => {
+    try {
+      isLoading.value = true
+      const response = await api.get(`/bingo-items?bingo_board_id=${boardId}`)
+      const data = response.data.data || response.data
+      bingoItems.value = data.sort((a: BingoItem, b: BingoItem) => a.position - b.position)
+    } catch (error) {
+      console.error('項目取得失敗:', error)
+      bingoItems.value = []
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const toggleAchieved = async (item: BingoItem) => {
+    if (item.position === 12) return
+    try {
+      const response = await api.patch(`/bingo-items/${item.id}`, { is_achieved: !item.is_achieved })
+      const updatedData = response.data.data || response.data
+      const index = bingoItems.value.findIndex(i => i.id === item.id)
+      if (index !== -1) {
+        bingoItems.value[index] = updatedData
+        bingoItems.value.sort((a: BingoItem, b: BingoItem) => a.position - b.position)
+      }
+    } catch (error) {
+      console.error('更新失敗:', error)
+    }
+  }
+
+  const updateItemLabel = async (itemId: number, label: string) => {
+    try {
+      const response = await api.patch(`/bingo-items/${itemId}`, { label })
+      const updatedData = response.data.data || response.data
+      const index = bingoItems.value.findIndex(i => i.id === itemId)
+      if (index !== -1) {
+        bingoItems.value[index] = updatedData
+      }
+      return updatedData
+    } catch (error) {
+      console.error('編集失敗:', error)
+      throw error
+    }
+  }
+
+  const bingoCount = computed(() => {
+    if (bingoItems.value.length < 25) return 0
+    let count = 0
+    const grid = bingoItems.value
+    const lines = [
+      [0, 1, 2, 3, 4], [5, 6, 7, 8, 9], [10, 11, 12, 13, 14], [15, 16, 17, 18, 19], [20, 21, 22, 23, 24],
+      [0, 5, 10, 15, 20], [1, 6, 11, 16, 21], [2, 7, 12, 17, 22], [3, 8, 13, 18, 23], [4, 9, 14, 19, 24],
+      [0, 6, 12, 18, 24], [4, 8, 12, 16, 20]
+    ]
+    for (const line of lines) { if (line.every(index => grid[index]?.is_achieved)) count++ }
+    return count
+  })
+
+  const resetItems = () => {
+    bingoItems.value = []
+  }
+
+  return {
+    bingoItems,
+    isLoading,
+    fetchBingoItems,
+    toggleAchieved,
+    updateItemLabel,
+    bingoCount,
+    resetItems
+  }
+}
