@@ -7,6 +7,7 @@ use App\Models\BingoItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Auth;
 
 class BingoBoardController extends Controller
 {
@@ -17,7 +18,9 @@ class BingoBoardController extends Controller
      */
     public function index(): Collection
     {
-        return auth()->user()->bingoBoards()->orderBy('created_at', 'desc')->get();
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        return $user->bingoBoards()->orderBy('created_at', 'desc')->get();
     }
 
     /**
@@ -32,9 +35,12 @@ class BingoBoardController extends Controller
             'title' => 'required|string|max:255',
         ]);
 
-        return DB::transaction(function () use ($request) {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        return DB::transaction(function () use ($request, $user) {
             // 1. ボードの作成
-            $board = auth()->user()->bingoBoards()->create([
+            $board = $user->bingoBoards()->create([
                 'title' => $request->title,
             ]);
 

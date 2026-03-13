@@ -23,7 +23,9 @@ class BingoController extends Controller
             'bingo_board_id' => 'required|exists:bingo_boards,id',
         ]);
 
-        $board = auth()->user()->bingoBoards()->findOrFail($request->bingo_board_id);
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        $board = $user->bingoBoards()->findOrFail($request->bingo_board_id);
 
         return BingoItemResource::collection(
             $board->items()->orderBy('position')->get()
@@ -44,8 +46,10 @@ class BingoController extends Controller
             'label' => 'sometimes|string|max:255',
         ]);
 
+        /** @var \App\Models\User $user */
+        $user = $request->user();
         // ボード経由で所有権を確認
-        auth()->user()->bingoBoards()->findOrFail($bingoItem->bingo_board_id);
+        $user->bingoBoards()->findOrFail($bingoItem->bingo_board_id);
 
         $data = [];
 
