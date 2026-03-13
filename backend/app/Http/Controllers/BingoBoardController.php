@@ -6,21 +6,27 @@ use App\Models\BingoBoard;
 use App\Models\BingoItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Collection;
 
 class BingoBoardController extends Controller
 {
     /**
      * ログインユーザーのビンゴボード一覧を取得
+     * 
+     * @return Collection
      */
-    public function index()
+    public function index(): Collection
     {
         return auth()->user()->bingoBoards()->orderBy('created_at', 'desc')->get();
     }
 
     /**
      * 新しいビンゴボードと25個のマス目を作成
+     * 
+     * @param Request $request
+     * @return BingoBoard
      */
-    public function store(Request $request)
+    public function store(Request $request): BingoBoard
     {
         $request->validate([
             'title' => 'required|string|max:255',
@@ -32,16 +38,22 @@ class BingoBoardController extends Controller
                 'title' => $request->title,
             ]);
 
-            // 2. 25個の空のマス目を作成
+            // 2. 25個の空のマス目を作成 (バルクインサートで最適化)
+            $items = [];
+            $now = now()->toDateTimeString();
             for ($i = 0; $i < 25; $i++) {
-                BingoItem::create([
+                $isFree = ($i === 12);
+                $items[] = [
                     'bingo_board_id' => $board->id,
-                    'label' => ($i === 12) ? 'FREE' : '',
+                    'label' => $isFree ? 'FREE' : '',
                     'position' => $i,
-                    'is_achieved' => ($i === 12),
-                    'achieved_at' => ($i === 12) ? now()->toDateString() : null,
-                ]);
+                    'is_achieved' => $isFree,
+                    'achieved_at' => $isFree ? now()->toDateString() : null,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
             }
+            BingoItem::insert($items);
 
             return $board->load('items');
         });

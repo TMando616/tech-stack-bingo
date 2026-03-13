@@ -7,6 +7,7 @@ use App\Models\BingoBoard;
 use App\Models\BingoItem;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Gate;
 
 class BingoController extends Controller
 {
@@ -38,8 +39,13 @@ class BingoController extends Controller
      */
     public function update(Request $request, BingoItem $bingoItem): BingoItemResource
     {
+        $request->validate([
+            'is_achieved' => 'sometimes|boolean',
+            'label' => 'sometimes|string|max:255',
+        ]);
+
         // ボード経由で所有権を確認
-        $board = auth()->user()->bingoBoards()->findOrFail($bingoItem->bingo_board_id);
+        auth()->user()->bingoBoards()->findOrFail($bingoItem->bingo_board_id);
 
         $data = [];
 
@@ -50,10 +56,13 @@ class BingoController extends Controller
         }
 
         if ($request->has('label') && $bingoItem->position !== 12) {
-            $data['label'] = $request->input('label');
+            // 文字列として保存 (空文字も許可する場合はそのまま)
+            $data['label'] = (string) $request->input('label');
         }
 
-        $bingoItem->update($data);
+        if (!empty($data)) {
+            $bingoItem->update($data);
+        }
 
         return new BingoItemResource($bingoItem);
     }
