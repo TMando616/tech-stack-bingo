@@ -5,7 +5,7 @@ import axios from 'axios'
  * Sanctum (Cookie認証) を使用するため withCredentials を有効にします。
  */
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8000', // バックエンドのベースURL
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000', // バックエンドのベースURL
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
