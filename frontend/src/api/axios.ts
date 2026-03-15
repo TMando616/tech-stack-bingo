@@ -5,13 +5,27 @@ import axios from 'axios'
  * Sanctum (Cookie認証) を使用するため withCredentials を有効にします。
  */
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000', // バックエンドのベースURL
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost',
   withCredentials: true,
+  withXSRFToken: true, // これを追加
   headers: {
     'Content-Type': 'application/json',
     'X-Requested-With': 'XMLHttpRequest'
   }
 })
+
+// ポートが異なる場合、Axiosが自動でヘッダーを付けないことがあるため手動で補完
+apiClient.interceptors.request.use(config => {
+  const token = document.cookie
+    .split('; ')
+    .find(row => row.startsWith('XSRF-TOKEN='))
+    ?.split('=')[1];
+
+  if (token) {
+    config.headers['X-XSRF-TOKEN'] = decodeURIComponent(token);
+  }
+  return config;
+});
 
 // LaravelのAPIプレフィックスを付けるためのラッパー
 export const api = {
