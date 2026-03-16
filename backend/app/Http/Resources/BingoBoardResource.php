@@ -16,6 +16,7 @@ class BingoBoardResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'share_id' => $this->share_id,
             'user_id' => $this->user_id,
             'title' => $this->title,
             'bingo_count' => $this->bingo_count,

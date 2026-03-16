@@ -31,5 +31,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 });
 
+// 公開API
+Route::get('/bingo-boards/share/{shareId}', [BingoBoardController::class, 'showShared']);
+
 // 認証関連
 require __DIR__.'/auth.php';

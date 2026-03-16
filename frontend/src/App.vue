@@ -3,7 +3,7 @@
  * メインアプリケーションコンポーネント
  * 認証、複数ボード管理、ビンゴ判定、ラベル編集を統合。
  */
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useAuth } from './composables/useAuth'
 import { useBingoBoards } from './composables/useBingoBoards'
 import { useBingoItems } from './composables/useBingoItems'
@@ -34,6 +34,18 @@ const isEditMode = ref(false)
 const showEditModal = ref(false)
 const editTargetItem = ref<BingoItem | null>(null)
 const isSavingLabel = ref(false)
+
+// 共有機能
+const shareUrl = computed(() => {
+  if (!currentBoard.value?.share_id) return ''
+  return `${window.location.origin}/share/${currentBoard.value.share_id}`
+})
+
+const copyShareUrl = () => {
+  if (!shareUrl.value) return
+  navigator.clipboard.writeText(shareUrl.value)
+  alert('共有URLをコピーしました！')
+}
 
 // 認証: ログイン
 const handleLogin = async (email: string, password: string) => {
@@ -138,6 +150,10 @@ onMounted(async () => {
             <button class="btn-edit" :class="{ active: isEditMode }" @click="isEditMode = !isEditMode">
               {{ isEditMode ? '編集終了' : '名前を編集' }}
             </button>
+            <div v-if="currentBoard" class="share-box">
+              <input :value="shareUrl" readonly class="share-input">
+              <button class="btn-copy" @click="copyShareUrl">🔗 共有</button>
+            </div>
           </div>
 
           <div v-if="bingoCount > 0" class="bingo-banner">🎉 {{ bingoCount }} BINGO! 🎉</div>
@@ -180,6 +196,12 @@ h1 { font-size: 2rem; color: #2c3e50; margin: 0; }
 .controls { text-align: center; margin-bottom: 1rem; }
 .btn-edit { padding: 6px 12px; border-radius: 20px; border: 2px solid #3498db; background: white; color: #3498db; font-size: 0.8rem; font-weight: bold; cursor: pointer; }
 .btn-edit.active { background: #e74c3c; border-color: #e74c3c; color: white; }
+
+.share-box { margin-top: 1rem; display: flex; justify-content: center; gap: 8px; }
+.share-input { width: 260px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.75rem; background: #f9f9f9; color: #666; }
+.btn-copy { padding: 4px 12px; border: 1px solid #27ae60; background: #27ae60; color: white; border-radius: 4px; font-size: 0.8rem; cursor: pointer; }
+.btn-copy:hover { background: #219150; }
+
 .bingo-banner { background: #ffeb3b; color: #f44336; padding: 0.8rem; border-radius: 8px; font-size: 1.5rem; font-weight: bold; text-align: center; margin-bottom: 1rem; }
 
 .loading { text-align: center; padding: 2rem; color: #666; }

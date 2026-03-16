@@ -6,6 +6,7 @@ export interface User {
 
 export interface BingoBoard {
   id: number;
+  share_id: string;
   user_id: number;
   title: string;
   bingo_count: number;

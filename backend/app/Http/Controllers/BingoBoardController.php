@@ -84,4 +84,16 @@ class BingoBoardController extends Controller
 
         return new BingoBoardResource($board);
     }
+
+    /**
+     * 公開用の share_id からボード情報を取得 (認証不要)
+     * 
+     * @param string $shareId
+     * @return BingoBoardResource
+     */
+    public function showShared(string $shareId): BingoBoardResource
+    {
+        $board = BingoBoard::where('share_id', $shareId)->firstOrFail();
+        return new BingoBoardResource($board->load('items'));
+    }
 }

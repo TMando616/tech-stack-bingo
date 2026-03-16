@@ -7,9 +7,21 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+use Illuminate\Support\Str;
+
 class BingoBoard extends Model
 {
     use HasFactory;
+
+    /**
+     * モデルの初期起動処理
+     */
+    protected static function booted()
+    {
+        static::creating(function ($board) {
+            $board->share_id = (string) Str::uuid();
+        });
+    }
 
     /**
      * 技術スタックテンプレート
