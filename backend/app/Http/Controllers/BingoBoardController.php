@@ -22,7 +22,7 @@ class BingoBoardController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
         return BingoBoardResource::collection(
-            $user->bingoBoards()->orderBy('created_at', 'desc')->get()
+            $user->bingoBoards()->with('items')->orderBy('created_at', 'desc')->get()
         );
     }
 

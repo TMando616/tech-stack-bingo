@@ -77,7 +77,7 @@ const handleSelectBoard = (board: BingoBoard) => {
 // ビンゴ管理
 watch(currentBoard, (newBoard) => {
   if (newBoard) {
-    fetchBingoItems(newBoard.id)
+    fetchBingoItems(newBoard.id, newBoard.items)
   } else {
     resetItems()
   }

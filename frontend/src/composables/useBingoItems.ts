@@ -6,7 +6,13 @@ export function useBingoItems() {
   const bingoItems = ref<BingoItem[]>([])
   const isLoading = ref(false)
 
-  const fetchBingoItems = async (boardId: number) => {
+  const fetchBingoItems = async (boardId: number, initialItems?: BingoItem[]) => {
+    // すでにアイテムデータがある場合はそれを使用 (通信削減)
+    if (initialItems && initialItems.length === 25) {
+      bingoItems.value = [...initialItems].sort((a: BingoItem, b: BingoItem) => a.position - b.position)
+      return
+    }
+
     try {
       isLoading.value = true
       const response = await api.get(`/bingo-items?bingo_board_id=${boardId}`)
