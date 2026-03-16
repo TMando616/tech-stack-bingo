@@ -66,6 +66,11 @@ class BingoController extends Controller
 
         if (!empty($data)) {
             $bingoItem->update($data);
+            
+            // ビンゴ数の再計算
+            if (isset($data['is_achieved'])) {
+                $bingoItem->bingoBoard->recalculateBingoCount();
+            }
         }
 
         return new BingoItemResource($bingoItem);
