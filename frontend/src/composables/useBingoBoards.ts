@@ -9,7 +9,10 @@ export function useBingoBoards() {
   const fetchBoards = async () => {
     try {
       const response = await api.get('/bingo-boards')
-      boards.value = response.data
+      // Laravel Resource の 'data' ラッパーを考慮
+      const data = response.data.data || response.data
+      boards.value = Array.isArray(data) ? data : []
+      
       if (boards.value.length > 0 && !currentBoard.value) {
         currentBoard.value = boards.value[0] || null
       }
@@ -25,9 +28,10 @@ export function useBingoBoards() {
         title: title.trim(),
         template: template
       })
-      boards.value.unshift(response.data)
-      currentBoard.value = response.data
-      return response.data
+      const data = response.data.data || response.data
+      boards.value.unshift(data)
+      currentBoard.value = data
+      return data
     } catch (error) {
       console.error('ボード作成失敗:', error)
       return null
