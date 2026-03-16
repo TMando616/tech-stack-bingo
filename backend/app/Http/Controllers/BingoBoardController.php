@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\BingoBoardResource;
 use App\Models\BingoBoard;
 use App\Models\BingoItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
 
 class BingoBoardController extends Controller
@@ -14,22 +15,24 @@ class BingoBoardController extends Controller
     /**
      * ログインユーザーのビンゴボード一覧を取得
      * 
-     * @return Collection
+     * @return AnonymousResourceCollection
      */
-    public function index(): Collection
+    public function index(): AnonymousResourceCollection
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        return $user->bingoBoards()->orderBy('created_at', 'desc')->get();
+        return BingoBoardResource::collection(
+            $user->bingoBoards()->orderBy('created_at', 'desc')->get()
+        );
     }
 
     /**
      * 新しいビンゴボードと25個のマス目を作成
      * 
      * @param Request $request
-     * @return BingoBoard
+     * @return BingoBoardResource
      */
-    public function store(Request $request): BingoBoard
+    public function store(Request $request): BingoBoardResource
     {
         $request->validate([
             'title' => 'required|string|max:255',
@@ -38,7 +41,7 @@ class BingoBoardController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        return DB::transaction(function () use ($request, $user) {
+        $board = DB::transaction(function () use ($request, $user) {
             // 1. ボードの作成
             $board = $user->bingoBoards()->create([
                 'title' => $request->title,
@@ -63,5 +66,7 @@ class BingoBoardController extends Controller
 
             return $board->load('items');
         });
+
+        return new BingoBoardResource($board);
     }
 }
