@@ -17,7 +17,7 @@ import EditItemModal from './components/EditItemModal.vue'
 
 // 状態管理
 const { user, isLoggingIn, login, logout, fetchUser } = useAuth()
-const { boards, currentBoard, fetchBoards, createBoard, resetBoards } = useBingoBoards()
+const { boards, currentBoard, fetchBoards, createBoard, createBoardWithTemplate, resetBoards } = useBingoBoards()
 const { 
   bingoItems, 
   isLoading, 
@@ -52,6 +52,10 @@ const handleLogout = async () => {
 // ボード管理
 const handleCreateBoard = async (title: string) => {
   await createBoard(title)
+}
+
+const handleCreateTemplate = async (key: string, name: string) => {
+  await createBoardWithTemplate(key, name)
 }
 
 const handleSelectBoard = (board: BingoBoard) => {
@@ -123,6 +127,7 @@ onMounted(async () => {
         :current-board="currentBoard" 
         @select-board="handleSelectBoard"
         @create-board="handleCreateBoard"
+        @create-template="handleCreateTemplate"
       />
 
       <!-- メイン: ビンゴボード -->

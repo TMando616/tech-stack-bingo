@@ -18,10 +18,13 @@ export function useBingoBoards() {
     }
   }
 
-  const createBoard = async (title: string) => {
+  const createBoard = async (title: string, template?: string) => {
     if (!title.trim()) return
     try {
-      const response = await api.post('/bingo-boards', { title: title.trim() })
+      const response = await api.post('/bingo-boards', { 
+        title: title.trim(),
+        template: template
+      })
       boards.value.unshift(response.data)
       currentBoard.value = response.data
       return response.data
@@ -36,11 +39,16 @@ export function useBingoBoards() {
     currentBoard.value = null
   }
 
+  const createBoardWithTemplate = async (templateKey: string, templateName: string) => {
+    return await createBoard(`${templateName} Bingo`, templateKey)
+  }
+
   return {
     boards,
     currentBoard,
     fetchBoards,
     createBoard,
+    createBoardWithTemplate,
     resetBoards
   }
 }

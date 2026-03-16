@@ -12,6 +12,32 @@ class BingoBoard extends Model
     use HasFactory;
 
     /**
+     * 技術スタックテンプレート
+     */
+    const TEMPLATES = [
+        'frontend' => [
+            'name' => 'Frontend',
+            'items' => [
+                'HTML5', 'CSS3', 'TypeScript', 'Vue.js', 'React',
+                'Next.js', 'Nuxt.js', 'Vite', 'Webpack', 'Babel',
+                'ESLint', 'Prettier', 'Tailwind CSS', 'Sass', 'Testing Library',
+                'Jest', 'Vitest', 'Cypress', 'Playwright', 'PWA',
+                'WebAssembly', 'Service Worker', 'WebSocket', 'GraphQL'
+            ]
+        ],
+        'backend' => [
+            'name' => 'Backend',
+            'items' => [
+                'PHP', 'Laravel', 'Python', 'FastAPI', 'Node.js',
+                'Express', 'Go', 'Gin', 'Rust', 'Actix Web',
+                'MySQL', 'PostgreSQL', 'Redis', 'MongoDB', 'Docker',
+                'Kubernetes', 'AWS', 'GCP', 'Azure', 'Terraform',
+                'Nginx', 'Apache', 'CI/CD', 'OpenAPI'
+            ]
+        ]
+    ];
+
+    /**
      * 複数代入可能な属性
      */
     protected $fillable = [

@@ -36,6 +36,7 @@ class BingoBoardController extends Controller
     {
         $request->validate([
             'title' => 'required|string|max:255',
+            'template' => 'nullable|string|in:' . implode(',', array_keys(BingoBoard::TEMPLATES)),
         ]);
 
         /** @var \App\Models\User $user */
@@ -47,14 +48,28 @@ class BingoBoardController extends Controller
                 'title' => $request->title,
             ]);
 
-            // 2. 25個の空のマス目を作成 (バルクインサートで最適化)
+            // 2. テンプレート項目の取得
+            $templateItems = [];
+            if ($request->template && isset(BingoBoard::TEMPLATES[$request->template])) {
+                $templateItems = BingoBoard::TEMPLATES[$request->template]['items'];
+                shuffle($templateItems);
+            }
+
+            // 3. 25個のマス目を作成 (バルクインサートで最適化)
             $items = [];
             $now = now()->toDateTimeString();
             for ($i = 0; $i < 25; $i++) {
                 $isFree = ($i === 12);
+                $label = $isFree ? 'FREE' : '';
+                
+                // テンプレートがある場合、FREE以外のマスに埋める
+                if (!$isFree && !empty($templateItems)) {
+                    $label = array_shift($templateItems) ?? '';
+                }
+
                 $items[] = [
                     'bingo_board_id' => $board->id,
-                    'label' => $isFree ? 'FREE' : '',
+                    'label' => $label,
                     'position' => $i,
                     'is_achieved' => $isFree,
                     'achieved_at' => $isFree ? now()->toDateString() : null,
