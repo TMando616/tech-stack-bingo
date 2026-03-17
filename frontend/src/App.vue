@@ -4,6 +4,7 @@
  * 認証、複数ボード管理、ビンゴ判定、ラベル編集を統合。
  */
 import { ref, onMounted, watch, computed } from 'vue'
+import confetti from 'canvas-confetti'
 import { useAuth } from './composables/useAuth'
 import { useBingoBoards } from './composables/useBingoBoards'
 import { useBingoItems } from './composables/useBingoItems'
@@ -82,6 +83,20 @@ watch(currentBoard, (newBoard) => {
     resetItems()
   }
 }, { immediate: true })
+
+// ビンゴ達成時の演出 (紙吹雪)
+watch(bingoCount, (newCount, oldCount) => {
+  // カウントが増えた場合（初回読み込み時は oldCount が undefined または 0）
+  if (oldCount !== undefined && newCount > oldCount) {
+    confetti({
+      particleCount: 150,
+      spread: 70,
+      origin: { y: 0.6 },
+      zIndex: 1000,
+      colors: ['#3498db', '#2ecc71', '#f1c40f', '#e74c3c', '#9b59b6']
+    })
+  }
+})
 
 const handleCellClick = (item: BingoItem) => {
   if (isEditMode.value) {
