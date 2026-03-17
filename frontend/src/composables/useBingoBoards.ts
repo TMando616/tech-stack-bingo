@@ -1,10 +1,12 @@
 import { ref } from 'vue'
 import { api } from '../api/axios'
 import type { BingoBoard } from '../types'
+import { useToast } from 'vue-toastification'
 
 export function useBingoBoards() {
   const boards = ref<BingoBoard[]>([])
   const currentBoard = ref<BingoBoard | null>(null)
+  const toast = useToast()
 
   const fetchBoards = async () => {
     try {
@@ -18,6 +20,7 @@ export function useBingoBoards() {
       }
     } catch (error) {
       console.error('ボード取得失敗:', error)
+      toast.error('ボードの取得に失敗しました。')
     }
   }
 
@@ -31,9 +34,11 @@ export function useBingoBoards() {
       const data = response.data.data || response.data
       boards.value.unshift(data)
       currentBoard.value = data
+      toast.success('ボードを作成しました！')
       return data
     } catch (error) {
       console.error('ボード作成失敗:', error)
+      toast.error('ボードの作成に失敗しました。')
       return null
     }
   }

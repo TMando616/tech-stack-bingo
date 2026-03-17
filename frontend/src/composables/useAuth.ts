@@ -1,10 +1,12 @@
 import { ref } from 'vue'
 import { api } from '../api/axios'
 import type { User } from '../types'
+import { useToast } from 'vue-toastification'
 
 export function useAuth() {
   const user = ref<User | null>(null)
   const isLoggingIn = ref(false)
+  const toast = useToast()
 
   const fetchUser = async () => {
     try {
@@ -21,10 +23,11 @@ export function useAuth() {
       await api.csrf()
       await api.post('/login', { email, password })
       await fetchUser()
+      toast.success('ログインしました！')
       return true
     } catch (error) {
       console.error('ログイン失敗:', error)
-      alert('ログインに失敗しました。')
+      toast.error('ログインに失敗しました。メールアドレスまたはパスワードを確認してください。')
       return false
     } finally {
       isLoggingIn.value = false
@@ -35,8 +38,10 @@ export function useAuth() {
     try {
       await api.post('/logout')
       user.value = null
+      toast.info('ログアウトしました。')
     } catch (error) {
       console.error('ログアウト失敗:', error)
+      toast.error('ログアウトに失敗しました。')
     }
   }
 

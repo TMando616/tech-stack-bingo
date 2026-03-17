@@ -1,10 +1,12 @@
 import { ref, computed } from 'vue'
 import { api } from '../api/axios'
 import type { BingoItem } from '../types'
+import { useToast } from 'vue-toastification'
 
 export function useBingoItems() {
   const bingoItems = ref<BingoItem[]>([])
   const isLoading = ref(false)
+  const toast = useToast()
 
   const fetchBingoItems = async (boardId: number, initialItems?: BingoItem[]) => {
     // すでにアイテムデータがある場合はそれを使用 (通信削減)
@@ -36,8 +38,13 @@ export function useBingoItems() {
         bingoItems.value[index] = updatedData
         bingoItems.value.sort((a: BingoItem, b: BingoItem) => a.position - b.position)
       }
+
+      if (updatedData.is_achieved) {
+        toast.success(`${updatedData.label} を達成しました！`)
+      }
     } catch (error) {
       console.error('更新失敗:', error)
+      toast.error('ステータスの更新に失敗しました。')
     }
   }
 
@@ -49,9 +56,11 @@ export function useBingoItems() {
       if (index !== -1) {
         bingoItems.value[index] = updatedData
       }
+      toast.success('項目を更新しました。')
       return updatedData
     } catch (error) {
       console.error('編集失敗:', error)
+      toast.error('項目の更新に失敗しました。')
       throw error
     }
   }
