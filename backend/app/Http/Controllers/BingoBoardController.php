@@ -96,4 +96,25 @@ class BingoBoardController extends Controller
         $board = BingoBoard::where('share_id', $shareId)->firstOrFail();
         return new BingoBoardResource($board->load('items'));
     }
+
+    /**
+     * 指定されたビンゴボードを削除
+     * 
+     * @param BingoBoard $bingoBoard
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy(BingoBoard $bingoBoard)
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        // 所有権の確認
+        if ($bingoBoard->user_id !== $user->id) {
+            abort(403);
+        }
+
+        $bingoBoard->delete();
+
+        return response()->noContent();
+    }
 }

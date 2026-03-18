@@ -43,6 +43,23 @@ export function useBingoBoards() {
     }
   }
 
+  const deleteBoard = async (boardId: number) => {
+    if (!confirm('本当にこのボードを削除しますか？')) return
+    try {
+      await api.delete(`/bingo-boards/${boardId}`)
+      boards.value = boards.value.filter(b => b.id !== boardId)
+      if (currentBoard.value?.id === boardId) {
+        currentBoard.value = boards.value[0] || null
+      }
+      toast.success('ボードを削除しました。')
+      return true
+    } catch (error) {
+      console.error('ボード削除失敗:', error)
+      toast.error('ボードの削除に失敗しました。')
+      return false
+    }
+  }
+
   const resetBoards = () => {
     boards.value = []
     currentBoard.value = null
@@ -58,6 +75,7 @@ export function useBingoBoards() {
     fetchBoards,
     createBoard,
     createBoardWithTemplate,
+    deleteBoard,
     resetBoards
   }
 }

@@ -11,6 +11,7 @@ const emit = defineEmits<{
   (e: 'selectBoard', board: BingoBoard): void
   (e: 'createBoard', title: string): void
   (e: 'createTemplate', templateKey: string, templateName: string): void
+  (e: 'deleteBoard', boardId: number): void
 }>()
 
 const newBoardTitle = ref('')
@@ -43,7 +44,8 @@ const handleCreateTemplate = (key: string, name: string) => {
         :class="{ active: currentBoard?.id === board.id }"
         @click="emit('selectBoard', board)"
       >
-        {{ board.title }}
+        <span class="board-title">{{ board.title }}</span>
+        <button class="btn-delete" @click.stop="emit('deleteBoard', board.id)">×</button>
       </div>
     </div>
     <div class="create-board">
@@ -61,9 +63,15 @@ const handleCreateTemplate = (key: string, name: string) => {
 .template-btn { padding: 8px; border: 1px dashed #3498db; border-radius: 6px; background: white; color: #3498db; cursor: pointer; font-size: 0.85rem; transition: 0.2s; }
 .template-btn:hover { background: #ebf5fb; }
 .board-list { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
-.board-item { padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; background: #f9f9f9; }
+.board-item { padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; background: #f9f9f9; display: flex; justify-content: space-between; align-items: center; }
 .board-item:hover { background: #f0f0f0; }
 .board-item.active { background: #3498db; color: white; font-weight: bold; }
+.board-title { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.btn-delete { background: none; border: none; color: #999; font-size: 1.2rem; cursor: pointer; padding: 0 4px; line-height: 1; opacity: 0; transition: 0.2s; }
+.board-item:hover .btn-delete { opacity: 1; }
+.btn-delete:hover { color: #e74c3c; }
+.active .btn-delete { color: rgba(255,255,255,0.7); }
+.active .btn-delete:hover { color: white; }
 .create-board { display: flex; gap: 4px; }
 .create-board input { flex: 1; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; }
 .create-board button { background: #2ecc71; color: white; border: none; border-radius: 4px; padding: 0 8px; cursor: pointer; }
