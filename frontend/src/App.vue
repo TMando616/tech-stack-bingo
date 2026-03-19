@@ -5,6 +5,7 @@
  */
 import { ref, onMounted, watch, computed } from 'vue'
 import confetti from 'canvas-confetti'
+import html2canvas from 'html2canvas'
 import { useAuth } from './composables/useAuth'
 import { useBingoBoards } from './composables/useBingoBoards'
 import { useBingoItems } from './composables/useBingoItems'
@@ -15,6 +16,22 @@ import LoginCard from './components/LoginCard.vue'
 import Sidebar from './components/Sidebar.vue'
 import BingoGrid from './components/BingoGrid.vue'
 import EditItemModal from './components/EditItemModal.vue'
+
+// ダークモード管理
+const isDarkMode = ref(localStorage.getItem('theme') === 'dark')
+watch(isDarkMode, (newVal) => {
+  if (newVal) {
+    document.body.classList.add('dark-mode')
+    localStorage.setItem('theme', 'dark')
+  } else {
+    document.body.classList.remove('dark-mode')
+    localStorage.setItem('theme', 'light')
+  }
+}, { immediate: true })
+
+const toggleDarkMode = () => {
+  isDarkMode.value = !isDarkMode.value
+}
 
 // 状態管理
 const { user, isLoggingIn, login, logout, fetchUser } = useAuth()
@@ -30,6 +47,31 @@ const {
 } = useBingoItems()
 
 const isEditMode = ref(false)
+
+// 画像出力状態
+const isExporting = ref(false)
+const exportAsImage = async () => {
+  if (!currentBoard.value) return
+  try {
+    isExporting.value = true
+    // メインコンテンツ要素を指定 (背景色をテーマに合わせる)
+    const element = document.querySelector('.main-content') as HTMLElement
+    if (!element) return
+    const canvas = await html2canvas(element, { 
+      useCORS: true, 
+      backgroundColor: isDarkMode.value ? '#121212' : '#ffffff' 
+    })
+    const link = document.createElement('a')
+    link.download = `${currentBoard.value.title}_bingo.png`
+    link.href = canvas.toDataURL()
+    link.click()
+  } catch (err) {
+    console.error('画像出力エラー:', err)
+    alert('画像の保存に失敗しました。')
+  } finally {
+    isExporting.value = false
+  }
+}
 
 // 編集モーダル状態
 const showEditModal = ref(false)
@@ -142,6 +184,9 @@ onMounted(async () => {
   <main class="container">
     <header>
       <h1>技術スタック・ビンゴ</h1>
+      <button class="btn-theme" @click="toggleDarkMode">
+        {{ isDarkMode ? '☀️ ライトモード' : '🌙 ダークモード' }}
+      </button>
       <div v-if="user" class="user-info">
         <span>こんにちは、<strong>{{ user.name }}</strong> さん</span>
         <button class="btn-logout" @click="handleLogout">ログアウト</button>
@@ -170,7 +215,10 @@ onMounted(async () => {
             <button class="btn-edit" :class="{ active: isEditMode }" @click="isEditMode = !isEditMode">
               {{ isEditMode ? '編集終了' : '名前を編集' }}
             </button>
-            <div v-if="currentBoard" class="share-box">
+            <button class="btn-export" @click="exportAsImage" :disabled="isExporting">
+              {{ isExporting ? '生成中...' : '📷 画像として保存' }}
+            </button>
+            <div v-if="currentBoard.share_id" class="share-box">
               <input :value="shareUrl" readonly class="share-input">
               <button class="btn-copy" @click="copyShareUrl">🔗 共有</button>
             </div>
@@ -178,7 +226,9 @@ onMounted(async () => {
 
           <div v-if="bingoCount > 0" class="bingo-banner">🎉 {{ bingoCount }} BINGO! 🎉</div>
 
-          <div v-if="isLoading" class="loading">読み込み中...</div>
+          <div v-if="isLoading" class="skeleton-grid">
+            <div v-for="i in 25" :key="i" class="skeleton-cell"></div>
+          </div>
           <BingoGrid 
             v-else
             :items="bingoItems" 
@@ -205,6 +255,8 @@ onMounted(async () => {
 .container { max-width: 900px; margin: 0 auto; padding: 1rem; font-family: 'Helvetica Neue', Arial, sans-serif; }
 header { text-align: center; margin-bottom: 1.5rem; }
 h1 { font-size: 2rem; color: #2c3e50; margin: 0; }
+.btn-theme { margin-top: 10px; background: none; border: 1px solid #ddd; padding: 4px 12px; border-radius: 4px; cursor: pointer; color: inherit; }
+.btn-theme:hover { background: rgba(0,0,0,0.05); }
 .user-info { font-size: 0.9rem; margin-top: 0.5rem; }
 .btn-logout { background: none; border: none; color: #e74c3c; text-decoration: underline; cursor: pointer; }
 
@@ -213,11 +265,15 @@ h1 { font-size: 2rem; color: #2c3e50; margin: 0; }
 /* メインコンテンツ */
 .main-content { flex: 1; }
 .board-container h2 { margin-top: 0; text-align: center; color: #2c3e50; }
-.controls { text-align: center; margin-bottom: 1rem; }
+.controls { text-align: center; margin-bottom: 1rem; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; align-items: center; }
 .btn-edit { padding: 6px 12px; border-radius: 20px; border: 2px solid #3498db; background: white; color: #3498db; font-size: 0.8rem; font-weight: bold; cursor: pointer; }
 .btn-edit.active { background: #e74c3c; border-color: #e74c3c; color: white; }
 
-.share-box { margin-top: 1rem; display: flex; justify-content: center; gap: 8px; }
+.btn-export { padding: 6px 12px; border-radius: 20px; border: 2px solid #27ae60; background: white; color: #27ae60; font-size: 0.8rem; font-weight: bold; cursor: pointer; }
+.btn-export:hover:not(:disabled) { background: #eafaf1; }
+.btn-export:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.share-box { display: flex; justify-content: center; gap: 8px; align-items: center; margin-top: 0; }
 .share-input { width: 260px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.75rem; background: #f9f9f9; color: #666; }
 .btn-copy { padding: 4px 12px; border: 1px solid #27ae60; background: #27ae60; color: white; border-radius: 4px; font-size: 0.8rem; cursor: pointer; }
 .btn-copy:hover { background: #219150; }
@@ -226,4 +282,30 @@ h1 { font-size: 2rem; color: #2c3e50; margin: 0; }
 
 .loading { text-align: center; padding: 2rem; color: #666; }
 .no-board { text-align: center; color: #999; margin-top: 4rem; }
+
+/* スケルトンスクリーン */
+.skeleton-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; aspect-ratio: 1; max-width: 500px; margin: 0 auto; }
+.skeleton-cell { background: #e0e0e0; border-radius: 8px; animation: pulse 1.5s infinite ease-in-out; }
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+</style>
+
+<style>
+/* ダークモードのグローバルスタイル */
+body.dark-mode { background-color: #121212; color: #e0e0e0; }
+body.dark-mode .container h1, 
+body.dark-mode .board-container h2 { color: #ffffff; }
+body.dark-mode .btn-theme { border-color: #555; }
+body.dark-mode .btn-theme:hover { background: rgba(255,255,255,0.1); }
+body.dark-mode .modal-content, 
+body.dark-mode .board-item,
+body.dark-mode .bingo-cell { background-color: #1e1e1e !important; color: #e0e0e0 !important; border-color: #333 !important; }
+body.dark-mode .modal-content h3 { color: #ffffff; }
+body.dark-mode .share-input { background: #333; color: #fff; border-color: #555; }
+body.dark-mode .skeleton-cell { background: #333; }
+body.dark-mode .btn-edit { background: transparent; }
+body.dark-mode .btn-export { background: transparent; }
 </style>
