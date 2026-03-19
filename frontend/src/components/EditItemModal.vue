@@ -14,15 +14,34 @@ const emit = defineEmits<{
 }>()
 
 const inputLabel = ref('')
+const errorMessage = ref('')
 
 watch(() => props.item, (newItem) => {
   if (newItem) {
     inputLabel.value = newItem.label
+    errorMessage.value = ''
   }
 }, { immediate: true })
 
 const handleSave = () => {
-  emit('save', inputLabel.value.trim())
+  const label = inputLabel.value.trim()
+  
+  if (!label) {
+    errorMessage.value = '項目名を入力してください。'
+    return
+  }
+  if (label.length > 20) {
+    errorMessage.value = '20文字以内で入力してください。'
+    return
+  }
+  // 特殊文字の簡易バリデーション (タグ等の入力を防ぐ)
+  if (/[<>&`'"]/.test(label)) {
+    errorMessage.value = '使用できない記号(<, >, &, `, \', ")が含まれています。'
+    return
+  }
+
+  errorMessage.value = ''
+  emit('save', label)
 }
 </script>
 
@@ -34,10 +53,12 @@ const handleSave = () => {
         v-model="inputLabel" 
         type="text" 
         class="modal-input" 
+        :class="{ 'is-invalid': errorMessage }"
         placeholder="項目名を入力"
         @keyup.enter="handleSave"
         autofocus
       />
+      <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
       <div class="modal-actions">
         <button class="btn-cancel" @click="emit('close')" :disabled="isSaving">キャンセル</button>
         <button class="btn-save" @click="handleSave" :disabled="isSaving">
@@ -54,6 +75,8 @@ const handleSave = () => {
 .modal-content h3 { margin-top: 0; margin-bottom: 1rem; color: #2c3e50; }
 .modal-input { width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 1rem; margin-bottom: 1rem; }
 .modal-input:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 2px rgba(52,152,219,0.2); }
+.modal-input.is-invalid { border-color: #e74c3c; box-shadow: 0 0 0 2px rgba(231,76,60,0.2); margin-bottom: 0.5rem; }
+.error-message { color: #e74c3c; font-size: 0.85rem; margin-bottom: 1rem; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
 .btn-cancel { padding: 8px 16px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; color: #666; }
 .btn-cancel:hover:not(:disabled) { background: #f5f5f5; }
