@@ -55,6 +55,7 @@ class BingoBoard extends Model
     protected $fillable = [
         'user_id',
         'title',
+        'theme',
     ];
 
     /**

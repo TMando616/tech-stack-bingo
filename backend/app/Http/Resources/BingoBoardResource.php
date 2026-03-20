@@ -19,6 +19,7 @@ class BingoBoardResource extends JsonResource
             'share_id' => $this->share_id,
             'user_id' => $this->user_id,
             'title' => $this->title,
+            'theme' => $this->theme,
             'bingo_count' => $this->bingo_count,
             'created_at' => $this->created_at?->toDateTimeString(),
             'updated_at' => $this->updated_at?->toDateTimeString(),

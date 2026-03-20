@@ -117,4 +117,31 @@ class BingoBoardController extends Controller
 
         return response()->noContent();
     }
+
+    /**
+     * ビンゴボードの更新
+     * 
+     * @param Request $request
+     * @param BingoBoard $bingoBoard
+     * @return BingoBoardResource
+     */
+    public function update(Request $request, BingoBoard $bingoBoard): BingoBoardResource
+    {
+        $request->validate([
+            'title' => 'sometimes|string|max:255',
+            'theme' => 'sometimes|string|max:50',
+        ]);
+
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        // 所有権の確認
+        if ($bingoBoard->user_id !== $user->id) {
+            abort(403);
+        }
+
+        $bingoBoard->update($request->only(['title', 'theme']));
+
+        return new BingoBoardResource($bingoBoard->load('items'));
+    }
 }

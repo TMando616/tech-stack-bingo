@@ -22,6 +22,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('bingo-boards')->group(function () {
         Route::get('/', [BingoBoardController::class, 'index']);
         Route::post('/', [BingoBoardController::class, 'store']);
+        Route::patch('/{bingoBoard}', [BingoBoardController::class, 'update']);
         Route::delete('/{bingoBoard}', [BingoBoardController::class, 'destroy']);
     });
 
