@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     optimizeDeps: {
-      include: ['vue-toastification']
+      include: ['vue-toastification', 'html2canvas']
     },
     server: {
       host: '0.0.0.0',
