@@ -35,7 +35,21 @@ const toggleDarkMode = () => {
 
 // 状態管理
 const { user, isLoggingIn, login, logout, fetchUser } = useAuth()
-const { boards, currentBoard, fetchBoards, createBoard, createBoardWithTemplate, deleteBoard, resetBoards } = useBingoBoards()
+const { 
+  boards, 
+  currentBoard, 
+  fetchBoards, 
+  createBoard, 
+  updateBoard,
+  createBoardWithTemplate, 
+  deleteBoard, 
+  resetBoards 
+} = useBingoBoards()
+
+const handleUpdateTheme = async (theme: string) => {
+  if (!currentBoard.value) return
+  await updateBoard(currentBoard.value.id, { theme })
+}
 const { 
   bingoItems, 
   isLoading, 
@@ -71,6 +85,43 @@ const exportAsImage = async () => {
   } finally {
     isExporting.value = false
   }
+}
+
+// データエクスポート
+const exportToJson = () => {
+  if (!currentBoard.value || !bingoItems.value.length) return
+  const data = {
+    board: currentBoard.value,
+    items: bingoItems.value
+  }
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${currentBoard.value.title}.json`
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+const exportToCsv = () => {
+  if (!currentBoard.value || !bingoItems.value.length) return
+  const headers = ['Position', 'Label', 'Achieved', 'Achieved At', 'Description', 'Link']
+  const rows = bingoItems.value.map(item => [
+    item.position,
+    `"${item.label.replace(/"/g, '""')}"`,
+    item.is_achieved ? 'Yes' : 'No',
+    item.achieved_at || '',
+    `"${(item.description || '').replace(/"/g, '""')}"`,
+    item.link || ''
+  ])
+  const csvContent = [headers, ...rows].map(e => e.join(',')).join('\n')
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${currentBoard.value.title}.csv`
+  link.click()
+  URL.revokeObjectURL(url)
 }
 
 // 編集モーダル状態
@@ -154,16 +205,23 @@ const handleCellClick = (item: BingoItem) => {
   }
 }
 
-const handleSaveLabel = async (newLabel: string) => {
+const handleSaveLabel = async (newLabel: string, description: string, link: string) => {
   if (!editTargetItem.value) return
-  if (!newLabel || newLabel === editTargetItem.value.label) {
+  
+  // 変更があるかチェック (ラベル, 概要, リンクのいずれかが異なる場合のみ更新)
+  const isChanged = 
+    newLabel !== editTargetItem.value.label || 
+    description !== (editTargetItem.value.description || '') || 
+    link !== (editTargetItem.value.link || '')
+
+  if (!isChanged) {
     showEditModal.value = false
     return
   }
 
   try {
     isSavingLabel.value = true
-    await updateItemLabel(editTargetItem.value.id, newLabel)
+    await updateItemLabel(editTargetItem.value.id, newLabel, description, link)
     showEditModal.value = false
   } catch (error) {
     alert('編集に失敗しました。')
@@ -209,15 +267,33 @@ onMounted(async () => {
 
       <!-- メイン: ビンゴボード -->
       <section class="main-content">
-        <div v-if="currentBoard" class="board-container">
+        <div v-if="currentBoard" class="board-container" :class="currentBoard.theme || 'default'">
           <h2>{{ currentBoard.title }}</h2>
           <div class="controls">
             <button class="btn-edit" :class="{ active: isEditMode }" @click="isEditMode = !isEditMode">
               {{ isEditMode ? '編集終了' : '名前を編集' }}
             </button>
-            <button class="btn-export" @click="exportAsImage" :disabled="isExporting">
-              {{ isExporting ? '生成中...' : '📷 画像として保存' }}
-            </button>
+            <div class="theme-selector" v-if="isEditMode">
+              <button 
+                v-for="t in ['default', 'blue', 'green', 'purple']" 
+                :key="t"
+                class="theme-dot"
+                :class="[t, { active: currentBoard.theme === t }]"
+                @click="handleUpdateTheme(t)"
+                :title="t"
+              ></button>
+            </div>
+            <div class="export-group">
+              <button class="btn-export" @click="exportAsImage" :disabled="isExporting">
+                {{ isExporting ? '生成中...' : '📷 画像' }}
+              </button>
+              <button class="btn-export btn-secondary" @click="exportToJson">
+                JS
+              </button>
+              <button class="btn-export btn-secondary" @click="exportToCsv">
+                CS
+              </button>
+            </div>
             <div v-if="currentBoard.share_id" class="share-box">
               <input :value="shareUrl" readonly class="share-input">
               <button class="btn-copy" @click="copyShareUrl">🔗 共有</button>
@@ -269,9 +345,24 @@ h1 { font-size: 2rem; color: #2c3e50; margin: 0; }
 .btn-edit { padding: 6px 12px; border-radius: 20px; border: 2px solid #3498db; background: white; color: #3498db; font-size: 0.8rem; font-weight: bold; cursor: pointer; }
 .btn-edit.active { background: #e74c3c; border-color: #e74c3c; color: white; }
 
+.theme-selector { display: flex; gap: 6px; align-items: center; margin: 0 10px; }
+.theme-dot { width: 20px; height: 20px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: 0.2s; }
+.theme-dot.active { border-color: #333; transform: scale(1.2); }
+.theme-dot.default { background: #f0f0f0; border-color: #ddd; }
+.theme-dot.blue { background: #e3f2fd; }
+.theme-dot.green { background: #e8f5e9; }
+.theme-dot.purple { background: #f3e5f5; }
+body.dark-mode .theme-dot.active { border-color: #fff; }
+
 .btn-export { padding: 6px 12px; border-radius: 20px; border: 2px solid #27ae60; background: white; color: #27ae60; font-size: 0.8rem; font-weight: bold; cursor: pointer; }
 .btn-export:hover:not(:disabled) { background: #eafaf1; }
 .btn-export:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.export-group { display: flex; border: 2px solid #27ae60; border-radius: 20px; overflow: hidden; }
+.export-group .btn-export { border: none; border-radius: 0; padding: 6px 10px; }
+.export-group .btn-export:not(:last-child) { border-right: 1px solid #27ae60; }
+.btn-secondary { background: #f9f9f9; color: #27ae60; font-size: 0.7rem; }
+.btn-secondary:hover { background: #eafaf1; }
 
 .share-box { display: flex; justify-content: center; gap: 8px; align-items: center; margin-top: 0; }
 .share-input { width: 260px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.75rem; background: #f9f9f9; color: #666; }
@@ -308,4 +399,14 @@ body.dark-mode .share-input { background: #333; color: #fff; border-color: #555;
 body.dark-mode .skeleton-cell { background: #333; }
 body.dark-mode .btn-edit { background: transparent; }
 body.dark-mode .btn-export { background: transparent; }
+
+/* ボードテーマ */
+.board-container { padding: 1.5rem; border-radius: 12px; transition: 0.3s; }
+.board-container.blue { background-color: #e3f2fd; }
+.board-container.green { background-color: #e8f5e9; }
+.board-container.purple { background-color: #f3e5f5; }
+
+body.dark-mode .board-container.blue { background-color: #0d47a122; }
+body.dark-mode .board-container.green { background-color: #1b5e2022; }
+body.dark-mode .board-container.purple { background-color: #4a148c22; }
 </style>
