@@ -9,6 +9,7 @@ export interface BingoBoard {
   share_id: string;
   user_id: number;
   title: string;
+  theme?: string;
   bingo_count: number;
   created_at: string;
   updated_at: string;
@@ -19,6 +20,8 @@ export interface BingoItem {
   id: number;
   bingo_board_id: number;
   label: string;
+  description?: string;
+  link?: string;
   is_achieved: boolean;
   achieved_at: string | null;
   position: number;

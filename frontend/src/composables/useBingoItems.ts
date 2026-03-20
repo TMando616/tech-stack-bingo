@@ -12,7 +12,7 @@ export function useBingoItems() {
     // すでにアイテムデータがある場合はそれを使用 (通信削減)
     if (initialItems && initialItems.length === 25) {
       bingoItems.value = [...initialItems].sort((a: BingoItem, b: BingoItem) => a.position - b.position)
-      return
+      return true
     }
 
     try {
@@ -20,37 +20,51 @@ export function useBingoItems() {
       const response = await api.get(`/bingo-items?bingo_board_id=${boardId}`)
       const data = response.data.data || response.data
       bingoItems.value = data.sort((a: BingoItem, b: BingoItem) => a.position - b.position)
+      return true
     } catch (error) {
       console.error('項目取得失敗:', error)
+      toast.error('項目の取得に失敗しました。')
       bingoItems.value = []
+      return false
     } finally {
       isLoading.value = false
     }
   }
 
   const toggleAchieved = async (item: BingoItem) => {
-    if (item.position === 12) return
+    if (item.position === 12) return false
     try {
+      isLoading.value = true
       const response = await api.patch(`/bingo-items/${item.id}`, { is_achieved: !item.is_achieved })
       const updatedData = response.data.data || response.data
       const index = bingoItems.value.findIndex(i => i.id === item.id)
       if (index !== -1) {
         bingoItems.value[index] = updatedData
+        // position でソートを維持
         bingoItems.value.sort((a: BingoItem, b: BingoItem) => a.position - b.position)
       }
 
       if (updatedData.is_achieved) {
         toast.success(`${updatedData.label} を達成しました！`)
       }
+      return true
     } catch (error) {
       console.error('更新失敗:', error)
       toast.error('ステータスの更新に失敗しました。')
+      return false
+    } finally {
+      isLoading.value = false
     }
   }
 
-  const updateItemLabel = async (itemId: number, label: string) => {
+  const updateItemLabel = async (itemId: number, label: string, description?: string, link?: string) => {
     try {
-      const response = await api.patch(`/bingo-items/${itemId}`, { label })
+      isLoading.value = true
+      const response = await api.patch(`/bingo-items/${itemId}`, { 
+        label,
+        description,
+        link
+      })
       const updatedData = response.data.data || response.data
       const index = bingoItems.value.findIndex(i => i.id === itemId)
       if (index !== -1) {
@@ -61,7 +75,9 @@ export function useBingoItems() {
     } catch (error) {
       console.error('編集失敗:', error)
       toast.error('項目の更新に失敗しました。')
-      throw error
+      return null
+    } finally {
+      isLoading.value = false
     }
   }
 
