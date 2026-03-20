@@ -44,6 +44,8 @@ class BingoController extends Controller
         $request->validate([
             'is_achieved' => 'sometimes|boolean',
             'label' => 'sometimes|string|max:255',
+            'description' => 'sometimes|string|nullable|max:1000',
+            'link' => 'sometimes|string|nullable|url|max:255',
         ]);
 
         /** @var \App\Models\User $user */
@@ -59,9 +61,16 @@ class BingoController extends Controller
             $data['achieved_at'] = $isAchieved ? now()->toDateString() : null;
         }
 
-        if ($request->has('label') && $bingoItem->position !== 12) {
-            // 文字列として保存 (空文字も許可する場合はそのまま)
-            $data['label'] = (string) $request->input('label');
+        if ($bingoItem->position !== 12) {
+            if ($request->has('label')) {
+                $data['label'] = (string) $request->input('label');
+            }
+            if ($request->has('description')) {
+                $data['description'] = $request->input('description');
+            }
+            if ($request->has('link')) {
+                $data['link'] = $request->input('link');
+            }
         }
 
         if (!empty($data)) {

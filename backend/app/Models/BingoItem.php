@@ -14,8 +14,10 @@ class BingoItem extends Model
      * 複数代入可能な属性
      */
     protected $fillable = [
-        'bingo_board_id', // ボードIDを追加
+        'bingo_board_id',
         'label',
+        'description',
+        'link',
         'is_achieved',
         'achieved_at',
         'position',
