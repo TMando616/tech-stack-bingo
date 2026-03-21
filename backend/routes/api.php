@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BingoBoardController;
 use App\Http\Controllers\BingoController;
+use App\Http\Controllers\AnalyticsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -31,6 +32,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [BingoController::class, 'index']);
         Route::patch('/{bingoItem}', [BingoController::class, 'update']);
     });
+
+    // 統計分析
+    Route::get('/analytics/summary', [AnalyticsController::class, 'index']);
 });
 
 // 公開API
