@@ -5,12 +5,19 @@ namespace App\Http\Controllers;
 use App\Http\Resources\BingoItemResource;
 use App\Models\BingoBoard;
 use App\Models\BingoItem;
+use App\Services\BingoItemService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Facades\Gate;
 
 class BingoController extends Controller
 {
+    protected $itemService;
+
+    public function __construct(BingoItemService $itemService)
+    {
+        $this->itemService = $itemService;
+    }
+
     /**
      * 指定されたボードのビンゴ項目を取得
      *
@@ -53,35 +60,8 @@ class BingoController extends Controller
         // ボード経由で所有権を確認
         $user->bingoBoards()->findOrFail($bingoItem->bingo_board_id);
 
-        $data = [];
+        $item = $this->itemService->updateItem($bingoItem, $request->all());
 
-        if ($request->has('is_achieved')) {
-            $isAchieved = (bool) $request->input('is_achieved');
-            $data['is_achieved'] = $isAchieved;
-            $data['achieved_at'] = $isAchieved ? now()->toDateString() : null;
-        }
-
-        if ($bingoItem->position !== 12) {
-            if ($request->has('label')) {
-                $data['label'] = (string) $request->input('label');
-            }
-            if ($request->has('description')) {
-                $data['description'] = $request->input('description');
-            }
-            if ($request->has('link')) {
-                $data['link'] = $request->input('link');
-            }
-        }
-
-        if (!empty($data)) {
-            $bingoItem->update($data);
-            
-            // ビンゴ数の再計算
-            if (isset($data['is_achieved'])) {
-                $bingoItem->bingoBoard->recalculateBingoCount();
-            }
-        }
-
-        return new BingoItemResource($bingoItem);
+        return new BingoItemResource($item);
     }
 }
