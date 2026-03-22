@@ -16,6 +16,7 @@ import LoginCard from './components/LoginCard.vue'
 import Sidebar from './components/Sidebar.vue'
 import BingoGrid from './components/BingoGrid.vue'
 import EditItemModal from './components/EditItemModal.vue'
+import DashboardModal from './components/DashboardModal.vue'
 
 // ダークモード管理
 const isDarkMode = ref(localStorage.getItem('theme') === 'dark')
@@ -61,6 +62,9 @@ const {
 } = useBingoItems()
 
 const isEditMode = ref(false)
+
+// 統計ダッシュボード状態
+const showDashboard = ref(false)
 
 // 画像出力状態
 const isExporting = ref(false)
@@ -242,9 +246,12 @@ onMounted(async () => {
   <main class="container">
     <header>
       <h1>技術スタック・ビンゴ</h1>
-      <button class="btn-theme" @click="toggleDarkMode">
-        {{ isDarkMode ? '☀️ ライトモード' : '🌙 ダークモード' }}
-      </button>
+      <div class="header-actions">
+        <button class="btn-stat" @click="showDashboard = true">📊 統計</button>
+        <button class="btn-theme" @click="toggleDarkMode">
+          {{ isDarkMode ? '☀️ ライトモード' : '🌙 ダークモード' }}
+        </button>
+      </div>
       <div v-if="user" class="user-info">
         <span>こんにちは、<strong>{{ user.name }}</strong> さん</span>
         <button class="btn-logout" @click="handleLogout">ログアウト</button>
@@ -324,6 +331,12 @@ onMounted(async () => {
       @close="showEditModal = false"
       @save="handleSaveLabel"
     />
+
+    <!-- 統計ダッシュボード -->
+    <DashboardModal 
+      :show="showDashboard" 
+      @close="showDashboard = false" 
+    />
   </main>
 </template>
 
@@ -331,8 +344,9 @@ onMounted(async () => {
 .container { max-width: 900px; margin: 0 auto; padding: 1rem; font-family: 'Helvetica Neue', Arial, sans-serif; }
 header { text-align: center; margin-bottom: 1.5rem; }
 h1 { font-size: 2rem; color: #2c3e50; margin: 0; }
-.btn-theme { margin-top: 10px; background: none; border: 1px solid #ddd; padding: 4px 12px; border-radius: 4px; cursor: pointer; color: inherit; }
-.btn-theme:hover { background: rgba(0,0,0,0.05); }
+.header-actions { display: flex; justify-content: center; gap: 8px; margin-top: 10px; }
+.btn-theme, .btn-stat { background: none; border: 1px solid #ddd; padding: 4px 12px; border-radius: 4px; cursor: pointer; color: inherit; font-size: 0.9rem; }
+.btn-theme:hover, .btn-stat:hover { background: rgba(0,0,0,0.05); }
 .user-info { font-size: 0.9rem; margin-top: 0.5rem; }
 .btn-logout { background: none; border: none; color: #e74c3c; text-decoration: underline; cursor: pointer; }
 
@@ -389,8 +403,10 @@ body.dark-mode .theme-dot.active { border-color: #fff; }
 body.dark-mode { background-color: #121212; color: #e0e0e0; }
 body.dark-mode .container h1, 
 body.dark-mode .board-container h2 { color: #ffffff; }
-body.dark-mode .btn-theme { border-color: #555; }
-body.dark-mode .btn-theme:hover { background: rgba(255,255,255,0.1); }
+body.dark-mode .btn-theme,
+body.dark-mode .btn-stat { border-color: #555; }
+body.dark-mode .btn-theme:hover,
+body.dark-mode .btn-stat:hover { background: rgba(255,255,255,0.1); }
 body.dark-mode .modal-content, 
 body.dark-mode .board-item,
 body.dark-mode .bingo-cell { background-color: #1e1e1e !important; color: #e0e0e0 !important; border-color: #333 !important; }
