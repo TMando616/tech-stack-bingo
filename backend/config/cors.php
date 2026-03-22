@@ -20,12 +20,15 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
+        env('FRONTEND_URL', 'http://localhost:5173'),
         'http://localhost:5173',
         'http://127.0.0.1:5173',
         'http://localhost',
     ],
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        '#^https://.*\.pages\.dev$#', // Cloudflare Pages のプレビュー・本番ドメインを許可
+    ],
 
     'allowed_headers' => ['*'],
 
