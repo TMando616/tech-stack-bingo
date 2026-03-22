@@ -98,6 +98,7 @@ class BingoBoardController extends Controller
         $request->validate([
             'title' => 'sometimes|string|max:255',
             'theme' => 'sometimes|string|max:50',
+            'is_public' => 'sometimes|boolean',
         ]);
 
         /** @var \App\Models\User $user */
@@ -108,7 +109,7 @@ class BingoBoardController extends Controller
             abort(403);
         }
 
-        $board = $this->boardService->updateBoard($bingoBoard, $request->only(['title', 'theme']));
+        $board = $this->boardService->updateBoard($bingoBoard, $request->only(['title', 'theme', 'is_public']));
 
         return new BingoBoardResource($board);
     }

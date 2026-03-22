@@ -42,6 +42,7 @@ const {
   fetchBoards, 
   createBoard, 
   updateBoard,
+  toggleLike,
   createBoardWithTemplate, 
   deleteBoard, 
   resetBoards 
@@ -51,6 +52,17 @@ const handleUpdateTheme = async (theme: string) => {
   if (!currentBoard.value) return
   await updateBoard(currentBoard.value.id, { theme })
 }
+
+const handleTogglePublic = async () => {
+  if (!currentBoard.value) return
+  await updateBoard(currentBoard.value.id, { is_public: !currentBoard.value.is_public })
+}
+
+const handleToggleLike = async () => {
+  if (!currentBoard.value) return
+  await toggleLike(currentBoard.value.id, currentBoard.value.is_liked)
+}
+
 const { 
   bingoItems, 
   isLoading, 
@@ -289,6 +301,13 @@ onMounted(async () => {
                 @click="handleUpdateTheme(t)"
                 :title="t"
               ></button>
+              <button 
+                class="btn-public-toggle" 
+                :class="{ 'is-public': currentBoard.is_public }"
+                @click="handleTogglePublic"
+              >
+                {{ currentBoard.is_public ? '🔓 公開中' : '🔒 非公開' }}
+              </button>
             </div>
             <div class="export-group">
               <button class="btn-export" @click="exportAsImage" :disabled="isExporting">
@@ -302,6 +321,9 @@ onMounted(async () => {
               </button>
             </div>
             <div v-if="currentBoard.share_id" class="share-box">
+              <button class="btn-like" :class="{ 'is-liked': currentBoard.is_liked }" @click="handleToggleLike">
+                {{ currentBoard.is_liked ? '❤️' : '🤍' }} {{ currentBoard.likes_count }}
+              </button>
               <input :value="shareUrl" readonly class="share-input">
               <button class="btn-copy" @click="copyShareUrl">🔗 共有</button>
             </div>
@@ -368,6 +390,9 @@ h1 { font-size: 2rem; color: #2c3e50; margin: 0; }
 .theme-dot.purple { background: #f3e5f5; }
 body.dark-mode .theme-dot.active { border-color: #fff; }
 
+.btn-public-toggle { font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; border: 1px solid #ddd; background: #f9f9f9; cursor: pointer; }
+.btn-public-toggle.is-public { border-color: #27ae60; color: #27ae60; background: #eafaf1; }
+
 .btn-export { padding: 6px 12px; border-radius: 20px; border: 2px solid #27ae60; background: white; color: #27ae60; font-size: 0.8rem; font-weight: bold; cursor: pointer; }
 .btn-export:hover:not(:disabled) { background: #eafaf1; }
 .btn-export:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -382,6 +407,10 @@ body.dark-mode .theme-dot.active { border-color: #fff; }
 .share-input { width: 260px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.75rem; background: #f9f9f9; color: #666; }
 .btn-copy { padding: 4px 12px; border: 1px solid #27ae60; background: #27ae60; color: white; border-radius: 4px; font-size: 0.8rem; cursor: pointer; }
 .btn-copy:hover { background: #219150; }
+
+.btn-like { background: white; border: 1px solid #ddd; border-radius: 20px; padding: 4px 10px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: 0.2s; }
+.btn-like:hover { transform: scale(1.05); background: #fff5f5; }
+.btn-like.is-liked { border-color: #ff7675; color: #e74c3c; }
 
 .bingo-banner { background: #ffeb3b; color: #f44336; padding: 0.8rem; border-radius: 8px; font-size: 1.5rem; font-weight: bold; text-align: center; margin-bottom: 1rem; }
 
@@ -415,6 +444,8 @@ body.dark-mode .share-input { background: #333; color: #fff; border-color: #555;
 body.dark-mode .skeleton-cell { background: #333; }
 body.dark-mode .btn-edit { background: transparent; }
 body.dark-mode .btn-export { background: transparent; }
+body.dark-mode .btn-public-toggle { background: #2d2d2d; border-color: #444; color: #999; }
+body.dark-mode .btn-like { background: #2d2d2d; border-color: #444; color: #e0e0e0; }
 
 /* ボードテーマ */
 .board-container { padding: 1.5rem; border-radius: 12px; transition: 0.3s; }

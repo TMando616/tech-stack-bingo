@@ -56,6 +56,11 @@ class BingoBoard extends Model
         'user_id',
         'title',
         'theme',
+        'is_public',
+    ];
+
+    protected $casts = [
+        'is_public' => 'boolean',
     ];
 
     /**
@@ -72,6 +77,14 @@ class BingoBoard extends Model
     public function items(): HasMany
     {
         return $this->hasMany(BingoItem::class);
+    }
+
+    /**
+     * このボードに付いた「いいね」を取得
+     */
+    public function likes(): HasMany
+    {
+        return $this->hasMany(Like::class);
     }
 
     /**

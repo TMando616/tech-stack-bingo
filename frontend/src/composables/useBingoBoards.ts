@@ -71,7 +71,7 @@ export function useBingoBoards() {
     }
   }
 
-  const updateBoard = async (boardId: number, data: { title?: string, theme?: string }) => {
+  const updateBoard = async (boardId: number, data: { title?: string, theme?: string, is_public?: boolean }) => {
     try {
       isLoading.value = true
       const response = await api.patch(`/bingo-boards/${boardId}`, data)
@@ -95,6 +95,31 @@ export function useBingoBoards() {
     }
   }
 
+  const toggleLike = async (boardId: number, isLiked: boolean) => {
+    try {
+      const response = isLiked 
+        ? await api.delete(`/bingo-boards/${boardId}/like`)
+        : await api.post(`/bingo-boards/${boardId}/like`)
+      
+      const { likes_count, is_liked } = response.data
+      
+      // ローカル状態の更新
+      const board = boards.value.find(b => b.id === boardId)
+      if (board) {
+        board.likes_count = likes_count
+        board.is_liked = is_liked
+      }
+      if (currentBoard.value?.id === boardId) {
+        currentBoard.value.likes_count = likes_count
+        currentBoard.value.is_liked = is_liked
+      }
+      return true
+    } catch (error) {
+      console.error('いいね操作失敗:', error)
+      return false
+    }
+  }
+
   const createBoardWithTemplate = async (templateKey: string, templateName: string) => {
     return await createBoard(`${templateName} Bingo`, templateKey)
   }
@@ -111,6 +136,7 @@ export function useBingoBoards() {
     fetchBoards,
     createBoard,
     updateBoard,
+    toggleLike,
     createBoardWithTemplate,
     deleteBoard,
     resetBoards

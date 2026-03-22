@@ -3,6 +3,7 @@
 use App\Http\Controllers\BingoBoardController;
 use App\Http\Controllers\BingoController;
 use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\LikeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +26,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/', [BingoBoardController::class, 'store']);
         Route::patch('/{bingoBoard}', [BingoBoardController::class, 'update']);
         Route::delete('/{bingoBoard}', [BingoBoardController::class, 'destroy']);
+        
+        // いいね機能
+        Route::post('/{bingoBoard}/like', [LikeController::class, 'store']);
+        Route::delete('/{bingoBoard}/like', [LikeController::class, 'destroy']);
     });
 
     // ビンゴ項目管理

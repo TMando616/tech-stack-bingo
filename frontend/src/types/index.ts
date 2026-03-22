@@ -10,7 +10,10 @@ export interface BingoBoard {
   user_id: number;
   title: string;
   theme?: string;
+  is_public: boolean;
   bingo_count: number;
+  likes_count: number;
+  is_liked: boolean;
   created_at: string;
   updated_at: string;
   items?: BingoItem[];
